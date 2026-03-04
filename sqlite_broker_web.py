@@ -113,7 +113,15 @@ def query_daily_buy_sell(
             SELECT
                 date,
                 ROUND(SUM(buy), 4) AS total_buy,
-                ROUND(SUM(sell), 4) AS total_sell
+                ROUND(SUM(sell), 4) AS total_sell,
+                ROUND(
+                    CASE WHEN SUM(buy) > 0 THEN SUM(price * buy) / SUM(buy) ELSE 0 END,
+                    4
+                ) AS avg_buy_price,
+                ROUND(
+                    CASE WHEN SUM(sell) > 0 THEN SUM(price * sell) / SUM(sell) ELSE 0 END,
+                    4
+                ) AS avg_sell_price
             FROM "{table_name}"
             WHERE date >= ? AND date <= ?
             GROUP BY date
@@ -359,11 +367,13 @@ def build_index_html() -> str:
             <th>日期</th>
             <th class="num">買進量</th>
             <th class="num">賣出量</th>
+            <th class="num">買進均價</th>
+            <th class="num">賣出均價</th>
             <th class="num">淨買賣</th>
           </tr>
         </thead>
         <tbody id="tbody">
-          <tr><td colspan="4" class="status">尚未查詢</td></tr>
+          <tr><td colspan="6" class="status">尚未查詢</td></tr>
         </tbody>
       </table>
     </section>
@@ -502,7 +512,7 @@ def build_index_html() -> str:
 
     function renderRows(rows) {
       if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="4" class="status">此條件查無資料</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="status">此條件查無資料</td></tr>`;
         rowInfo.textContent = "筆數：0";
         sumInfo.textContent = "合計：買進 0 / 賣出 0 / 淨買賣 0";
         return;
@@ -513,6 +523,8 @@ def build_index_html() -> str:
       const html = rows.map(r => {
         const b = Number(r.total_buy || 0);
         const s = Number(r.total_sell || 0);
+        const bp = Number(r.avg_buy_price || 0);
+        const sp = Number(r.avg_sell_price || 0);
         const net = b - s;
         sumBuy += b;
         sumSell += s;
@@ -520,6 +532,8 @@ def build_index_html() -> str:
           <td>${r.date}</td>
           <td class="num buy">${fmtNum(b)}</td>
           <td class="num sell">${fmtNum(s)}</td>
+          <td class="num">${fmtNum(bp)}</td>
+          <td class="num">${fmtNum(sp)}</td>
           <td class="num">${fmtNum(net)}</td>
         </tr>`;
       }).join("");
