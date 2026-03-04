@@ -218,7 +218,7 @@ def build_index_html() -> str:
 
     .controls {
       display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 12px;
       padding: 16px 24px;
       border-bottom: 1px solid var(--line);
@@ -332,11 +332,8 @@ def build_index_html() -> str:
         <select id="dbSelect"></select>
       </div>
       <div class="field">
-        <label for="brokerSearch">Broker 搜尋</label>
-        <input id="brokerSearch" type="text" placeholder="輸入分點代號或名稱" />
-      </div>
-      <div class="field">
-        <label for="brokerSelect">Broker</label>
+        <label for="brokerFilter">Broker</label>
+        <input id="brokerFilter" type="text" placeholder="輸入分點代號或名稱" />
         <select id="brokerSelect"></select>
       </div>
       <div class="field">
@@ -381,7 +378,7 @@ def build_index_html() -> str:
 
   <script>
     const dbSelect = document.getElementById("dbSelect");
-    const brokerSearch = document.getElementById("brokerSearch");
+    const brokerFilter = document.getElementById("brokerFilter");
     const brokerSelect = document.getElementById("brokerSelect");
     const startDate = document.getElementById("startDate");
     const endDate = document.getElementById("endDate");
@@ -392,31 +389,43 @@ def build_index_html() -> str:
     const sumInfo = document.getElementById("sumInfo");
     const statusEl = document.getElementById("status");
     let brokerRawList = [];
+    let selectedBrokerTableName = "";
 
-    function renderBrokerOptions(items, keepValue = "") {
+    function brokerDisplayText(broker) {
+      return `${broker.securities_trader_id} - ${broker.securities_trader}`;
+    }
+
+    function renderBrokerOptions(items, keepTableName = "") {
       brokerSelect.innerHTML = "";
       for (const b of items) {
         const opt = document.createElement("option");
         opt.value = b.table_name;
-        opt.textContent = `${b.securities_trader_id} - ${b.securities_trader}`;
-        opt.dataset.trader = b.securities_trader;
-        opt.dataset.traderId = b.securities_trader_id;
+        opt.textContent = brokerDisplayText(b);
         brokerSelect.appendChild(opt);
       }
 
-      if (keepValue) {
-        brokerSelect.value = keepValue;
+      if (keepTableName) {
+        const target = items.find((b) => b.table_name == keepTableName);
+        if (target) {
+          selectedBrokerTableName = target.table_name;
+          brokerSelect.value = target.table_name;
+          return;
+        }
       }
-      if (!brokerSelect.value && brokerSelect.options.length > 0) {
-        brokerSelect.selectedIndex = 0;
+
+      if (items.length > 0) {
+        selectedBrokerTableName = items[0].table_name;
+        brokerSelect.value = items[0].table_name;
+      } else {
+        selectedBrokerTableName = "";
       }
     }
 
     function filterBrokersByKeyword() {
-      const keyword = (brokerSearch.value || "").trim().toLowerCase();
-      const current = brokerSelect.value;
+      const keyword = (brokerFilter.value || "").trim().toLowerCase();
+      const currentTable = selectedBrokerTableName;
       if (!keyword) {
-        renderBrokerOptions(brokerRawList, current);
+        renderBrokerOptions(brokerRawList, currentTable);
         return;
       }
 
@@ -425,7 +434,7 @@ def build_index_html() -> str:
         const name = (b.securities_trader || "").toLowerCase();
         return id.includes(keyword) || name.includes(keyword);
       });
-      renderBrokerOptions(filtered, current);
+      renderBrokerOptions(filtered, currentTable);
     }
 
     function setStatus(text, isError = false) {
@@ -467,7 +476,7 @@ def build_index_html() -> str:
       ]);
 
       brokerRawList = brokers;
-      brokerSearch.value = "";
+      brokerFilter.value = "";
       renderBrokerOptions(brokerRawList);
 
       if (range.min_date) {
@@ -486,7 +495,7 @@ def build_index_html() -> str:
 
     async function runQuery() {
       const db = dbSelect.value;
-      const table = brokerSelect.value;
+      const table = selectedBrokerTableName;
       const s = startDate.value;
       const e = endDate.value;
       if (!db || !table || !s || !e) {
@@ -561,7 +570,10 @@ def build_index_html() -> str:
         setStatus(err.message, true);
       }
     });
-    brokerSearch.addEventListener("input", filterBrokersByKeyword);
+    brokerFilter.addEventListener("input", filterBrokersByKeyword);
+    brokerSelect.addEventListener("change", () => {
+      selectedBrokerTableName = brokerSelect.value || "";
+    });
     runBtn.addEventListener("click", runQuery);
     init();
   </script>
