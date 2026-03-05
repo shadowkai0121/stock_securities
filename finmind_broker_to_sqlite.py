@@ -16,7 +16,7 @@ import os
 import re
 import sqlite3
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -25,6 +25,9 @@ from urllib.request import urlopen
 
 API_URL = "https://api.finmindtrade.com/api/v4/data"
 DATASET = "TaiwanStockTradingDailyReport"
+TRADING_DATE_DATASET = "TaiwanStockTradingDate"
+NO_DATA_BROKER_ID = "__NO_DATA__"
+NO_DATA_BROKER_NAME = "__NO_DATA__"
 
 
 def parse_args() -> argparse.Namespace:
@@ -89,13 +92,7 @@ def get_token(cli_token: str | None) -> str:
     return token
 
 
-def fetch_one_day(stock_id: str, date_str: str, token: str) -> list[dict[str, Any]]:
-    params = {
-        "dataset": DATASET,
-        "data_id": stock_id,
-        "start_date": date_str,
-        "token": token,
-    }
+def fetch_dataset(params: dict[str, str]) -> list[dict[str, Any]]:
     request_url = f"{API_URL}?{urlencode(params)}"
     try:
         with urlopen(request_url, timeout=30) as response:
@@ -112,15 +109,52 @@ def fetch_one_day(stock_id: str, date_str: str, token: str) -> list[dict[str, An
     return data
 
 
+def fetch_one_day(stock_id: str, date_str: str, token: str) -> list[dict[str, Any]]:
+    params = {
+        "dataset": DATASET,
+        "data_id": stock_id,
+        "start_date": date_str,
+        "token": token,
+    }
+    return fetch_dataset(params)
+
+
+def fetch_trading_dates(start_date: str, end_date: str, token: str) -> list[str]:
+    params = {
+        "dataset": TRADING_DATE_DATASET,
+        "start_date": start_date,
+        "end_date": end_date,
+        "token": token,
+    }
+    rows = fetch_dataset(params)
+    dates: set[str] = set()
+    for row in rows:
+        date_str = str(row.get("date", "")).strip()
+        if date_str:
+            dates.add(date_str)
+    return sorted(dates)
+
+
 def fetch_range(stock_id: str, start_date: str, end_date: str, token: str) -> list[dict[str, Any]]:
-    start_dt = parse_date(start_date)
-    end_dt = parse_date(end_date)
     rows: list[dict[str, Any]] = []
-    cur = start_dt
-    while cur <= end_dt:
-        one_date = cur.strftime("%Y-%m-%d")
-        rows.extend(fetch_one_day(stock_id=stock_id, date_str=one_date, token=token))
-        cur += timedelta(days=1)
+    trading_dates = fetch_trading_dates(start_date=start_date, end_date=end_date, token=token)
+    for one_date in trading_dates:
+        day_rows = fetch_one_day(stock_id=stock_id, date_str=one_date, token=token)
+        if day_rows:
+            rows.extend(day_rows)
+            continue
+        rows.append(
+            {
+                "date": one_date,
+                "stock_id": stock_id,
+                "securities_trader_id": NO_DATA_BROKER_ID,
+                "securities_trader": NO_DATA_BROKER_NAME,
+                "price": None,
+                "buy": None,
+                "sell": None,
+                "_is_null_placeholder": True,
+            }
+        )
     return rows
 
 
@@ -153,6 +187,7 @@ def ensure_meta_tables(conn: sqlite3.Connection) -> None:
         """
         CREATE TABLE IF NOT EXISTS fetch_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            dataset TEXT NOT NULL DEFAULT '',
             stock_id TEXT NOT NULL,
             start_date TEXT NOT NULL,
             end_date TEXT NOT NULL,
@@ -162,6 +197,11 @@ def ensure_meta_tables(conn: sqlite3.Connection) -> None:
         )
         """
     )
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(fetch_history)")}
+    if "dataset" not in cols:
+        conn.execute(
+            "ALTER TABLE fetch_history ADD COLUMN dataset TEXT NOT NULL DEFAULT ''"
+        )
 
 
 def ensure_broker_table(conn: sqlite3.Connection, table_name: str) -> None:
@@ -173,9 +213,9 @@ def ensure_broker_table(conn: sqlite3.Connection, table_name: str) -> None:
             stock_id TEXT NOT NULL,
             securities_trader_id TEXT NOT NULL,
             securities_trader TEXT NOT NULL,
-            price REAL NOT NULL,
-            buy REAL NOT NULL,
-            sell REAL NOT NULL,
+            price REAL,
+            buy REAL,
+            sell REAL,
             inserted_at TEXT NOT NULL DEFAULT (datetime('now')),
             UNIQUE (
                 date, stock_id, securities_trader_id, securities_trader, price, buy, sell
@@ -192,6 +232,13 @@ def as_float(raw: Any) -> float:
     text = "" if raw is None else str(raw).strip()
     if not text:
         return 0.0
+    return float(text)
+
+
+def as_nullable_float(raw: Any) -> float | None:
+    text = "" if raw is None else str(raw).strip()
+    if not text:
+        return None
     return float(text)
 
 
@@ -236,31 +283,67 @@ def save_to_sqlite(
                 (broker_id, broker_name, table_name, stock_id),
             )
 
-            cur = conn.execute(
-                f"""
-                INSERT OR IGNORE INTO "{table_name}" (
-                    date, stock_id, securities_trader_id, securities_trader, price, buy, sell
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    str(row.get("date", "")),
-                    str(row.get("stock_id", stock_id)),
-                    broker_id,
-                    broker_name,
-                    as_float(row.get("price")),
-                    as_float(row.get("buy")),
-                    as_float(row.get("sell")),
-                ),
-            )
+            if row.get("_is_null_placeholder"):
+                cur = conn.execute(
+                    f"""
+                    INSERT INTO "{table_name}" (
+                        date, stock_id, securities_trader_id, securities_trader, price, buy, sell
+                    )
+                    SELECT ?, ?, ?, ?, ?, ?, ?
+                    WHERE NOT EXISTS (
+                        SELECT 1
+                        FROM "{table_name}"
+                        WHERE date = ?
+                          AND stock_id = ?
+                          AND securities_trader_id = ?
+                          AND securities_trader = ?
+                          AND price IS NULL
+                          AND buy IS NULL
+                          AND sell IS NULL
+                    )
+                    """,
+                    (
+                        str(row.get("date", "")),
+                        str(row.get("stock_id", stock_id)),
+                        broker_id,
+                        broker_name,
+                        as_nullable_float(row.get("price")),
+                        as_nullable_float(row.get("buy")),
+                        as_nullable_float(row.get("sell")),
+                        str(row.get("date", "")),
+                        str(row.get("stock_id", stock_id)),
+                        broker_id,
+                        broker_name,
+                    ),
+                )
+            else:
+                cur = conn.execute(
+                    f"""
+                    INSERT OR IGNORE INTO "{table_name}" (
+                        date, stock_id, securities_trader_id, securities_trader, price, buy, sell
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        str(row.get("date", "")),
+                        str(row.get("stock_id", stock_id)),
+                        broker_id,
+                        broker_name,
+                        as_float(row.get("price")),
+                        as_float(row.get("buy")),
+                        as_float(row.get("sell")),
+                    ),
+                )
             inserted_rows += cur.rowcount
             touched_brokers.add(broker_id)
 
         conn.execute(
             """
-            INSERT INTO fetch_history (stock_id, start_date, end_date, fetched_rows, inserted_rows)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO fetch_history (
+                dataset, stock_id, start_date, end_date, fetched_rows, inserted_rows
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (stock_id, start_date, end_date, len(rows), inserted_rows),
+            (DATASET, stock_id, start_date, end_date, len(rows), inserted_rows),
         )
         conn.commit()
     finally:

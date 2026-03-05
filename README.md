@@ -9,6 +9,8 @@
 FINMIND_SPONSOR_API_KEY=你的_token
 ```
 
+> 所有抓取腳本都會先用 `TaiwanStockTradingDate` 取得交易日清單，確保每個交易日都有資料列；若該交易日主資料集沒有資料，會以 `null` 欄位值寫入。
+
 ## 1) 下載區間資料（8271 範例）
 
 > `TaiwanStockTradingDailyReport` 單次 API 只能查單日，本專案程式會自動逐日抓取後合併輸出。
@@ -96,6 +98,50 @@ http://127.0.0.1:8765
 - 統計頁可輸入關鍵字篩選分點（代號或名稱）
 - 統計頁可直接點擊表頭進行排序（再次點擊切換升冪/降冪）
 - 保留「每日資料頁」，只有每日資料頁需要按查詢按鈕才會送出查詢
+
+## 5) 下載 `TaiwanStockPriceAdj` 並寫入 SQLite
+
+```bash
+python finmind_price_adj_to_sqlite.py --stock-id 2330 --start-date 2026-01-01 --end-date 2026-03-01
+```
+
+預設會建立：
+
+```text
+2330_price_adj.sqlite
+```
+
+預設資料表：
+- `stock_price_adj`：還原股價資料（`date, open, max, min, close, Trading_Volume, Trading_money, spread, Trading_turnover`）
+- `fetch_history`：每次抓取寫入紀錄
+
+可選參數：
+
+```bash
+python finmind_price_adj_to_sqlite.py --stock-id 2330 --start-date 2026-01-01 --end-date 2026-03-01 --db-path data/2330_price_adj.sqlite --table-name twse_price_adj --replace
+```
+
+## 6) 下載 `TaiwanStockPrice` 並寫入 SQLite
+
+```bash
+python finmind_price_to_sqlite.py --stock-id 2330 --start-date 2026-01-01 --end-date 2026-03-01
+```
+
+預設會建立：
+
+```text
+2330.sqlite
+```
+
+預設資料表：
+- `stock_price`：股價資料（`date, open, max, min, close, Trading_Volume, Trading_money, spread, Trading_turnover`）
+- `fetch_history`：每次抓取寫入紀錄
+
+可選參數：
+
+```bash
+python finmind_price_to_sqlite.py --stock-id 2330 --start-date 2026-01-01 --end-date 2026-03-01 --db-path data/2330.sqlite --table-name twse_stock_price --replace
+```
 
 ## 加權計算方式
 
