@@ -143,6 +143,76 @@ python finmind_price_to_sqlite.py --stock-id 2330 --start-date 2026-01-01 --end-
 python finmind_price_to_sqlite.py --stock-id 2330 --start-date 2026-01-01 --end-date 2026-03-01 --db-path data/2330.sqlite --table-name twse_stock_price --replace
 ```
 
+## 7) 下載 `TaiwanStockMarginPurchaseShortSale` 並寫入 SQLite
+
+```bash
+python finmind_margin_purchase_short_sale_to_sqlite.py --stock-id 2330 --start-date 2026-01-01 --end-date 2026-03-01
+```
+
+預設會建立：
+
+```text
+2330.sqlite
+```
+
+預設資料表：
+- `stock_margin_purchase_short_sale`：融資融券資料（`date, MarginPurchaseBuy, MarginPurchaseCashRepayment, MarginPurchaseLimit, MarginPurchaseSell, MarginPurchaseTodayBalance, MarginPurchaseYesterdayBalance, OffsetLoanAndShort, ShortSaleBuy, ShortSaleCashRepayment, ShortSaleLimit, ShortSaleSell, ShortSaleTodayBalance, ShortSaleYesterdayBalance, Note`）
+- `fetch_history`：每次抓取寫入紀錄
+
+可選參數：
+
+```bash
+python finmind_margin_purchase_short_sale_to_sqlite.py --stock-id 2330 --start-date 2026-01-01 --end-date 2026-03-01 --db-path data/2330.sqlite --table-name twse_margin --replace
+```
+
+## 8) 使用 `TaiwanStockInfoWithWarrantSummary` 取得指定個股連結的所有權證（並寫入 SQLite）
+
+列出指定標的（例如 `2330`）連結的權證代號：
+
+```bash
+python finmind_warrant_list_by_target.py --stock-id 2330
+```
+
+預設會寫入：
+
+```text
+2330.sqlite
+```
+
+預設資料表：
+- `stock_warrant_summary`：權證摘要資料（`target_stock_id, stock_id, warrant_type, date, end_date, exercise_ratio, fulfillment_price, fulfillment_method, fulfillment_start_date, fulfillment_end_date, close, target_close`）
+- `fetch_history`：每次抓取寫入紀錄
+
+依官方文件加上 `start_date` 條件：
+
+```bash
+python finmind_warrant_list_by_target.py --stock-id 2330 --start-date 2020-04-06
+```
+
+僅列出仍在存續的權證（`end_date >= 今天`）：
+
+```bash
+python finmind_warrant_list_by_target.py --stock-id 2330 --active-only
+```
+
+輸出詳細資料到 CSV（含 `type/date/end_date/exercise_ratio` 等欄位）：
+
+```bash
+python finmind_warrant_list_by_target.py --stock-id 2330 --output outputs/2330_warrants.csv
+```
+
+如果權證代號很多，可先限制輸出筆數（`0` 代表全部）：
+
+```bash
+python finmind_warrant_list_by_target.py --stock-id 2330 --print-limit 100
+```
+
+可選 SQLite 參數：
+
+```bash
+python finmind_warrant_list_by_target.py --stock-id 2330 --start-date 2020-04-06 --db-path data/2330.sqlite --table-name twse_warrant_summary --replace
+```
+
 ## 加權計算方式
 
 - 分組鍵：`date + stock_id + securities_trader_id + securities_trader`
