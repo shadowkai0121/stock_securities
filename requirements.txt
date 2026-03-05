@@ -2,9 +2,9 @@ pandas
 numpy
 matplotlib
 scikit-learn
+statsmodels
 tqdm
 pyarrow
 nbformat
 nbclient
 nbconvert
-

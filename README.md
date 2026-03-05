@@ -138,3 +138,19 @@ Official docs checked during implementation:
 - https://finmind.github.io/
 - https://finmind.github.io/tutor/TaiwanMarket/Chip/
 - https://finmind.github.io/tutor/TaiwanMarket/Technical/
+
+## Thesis Validation Notebook
+
+Replication assets for the biotech broker-flow thesis are under `papers/`:
+
+- `papers/thesis_biotech_validation.ipynb`
+- `papers/thesis_biotech_validation_config.json`
+- `papers/thesis_biotech_validation_utils.py`
+
+You can run it interactively in Jupyter, or headless:
+
+```bash
+python -m jupyter nbconvert --to notebook --execute papers/thesis_biotech_validation.ipynb --output papers/thesis_biotech_validation.executed.ipynb
+```
+
+Default output files are written into `papers/` (report + CSV summaries).

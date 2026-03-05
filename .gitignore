@@ -210,4 +210,7 @@ __marimo__/
 
 # Project outputs
 outputs/
-papers/
+papers/*
+!papers/thesis_biotech_validation.ipynb
+!papers/thesis_biotech_validation_config.json
+!papers/thesis_biotech_validation_utils.py
