@@ -18,7 +18,7 @@ import sqlite3
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import urlopen
@@ -135,27 +135,28 @@ def fetch_trading_dates(start_date: str, end_date: str, token: str) -> list[str]
     return sorted(dates)
 
 
-def fetch_range(stock_id: str, start_date: str, end_date: str, token: str) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
+def fetch_range(
+    stock_id: str,
+    start_date: str,
+    end_date: str,
+    token: str,
+) -> Iterable[dict[str, Any]]:
     trading_dates = fetch_trading_dates(start_date=start_date, end_date=end_date, token=token)
     for one_date in trading_dates:
         day_rows = fetch_one_day(stock_id=stock_id, date_str=one_date, token=token)
         if day_rows:
-            rows.extend(day_rows)
+            yield from day_rows
             continue
-        rows.append(
-            {
-                "date": one_date,
-                "stock_id": stock_id,
-                "securities_trader_id": NO_DATA_BROKER_ID,
-                "securities_trader": NO_DATA_BROKER_NAME,
-                "price": None,
-                "buy": None,
-                "sell": None,
-                "_is_null_placeholder": True,
-            }
-        )
-    return rows
+        yield {
+            "date": one_date,
+            "stock_id": stock_id,
+            "securities_trader_id": NO_DATA_BROKER_ID,
+            "securities_trader": NO_DATA_BROKER_NAME,
+            "price": None,
+            "buy": None,
+            "sell": None,
+            "_is_null_placeholder": True,
+        }
 
 
 def get_db_path(stock_id: str, cli_path: str | None) -> Path:
@@ -243,7 +244,7 @@ def as_nullable_float(raw: Any) -> float | None:
 
 
 def save_to_sqlite(
-    rows: list[dict[str, Any]],
+    rows: Iterable[dict[str, Any]],
     stock_id: str,
     start_date: str,
     end_date: str,
@@ -254,20 +255,30 @@ def save_to_sqlite(
         db_path.unlink()
 
     conn = sqlite3.connect(db_path)
+    fetched_rows = 0
     inserted_rows = 0
     touched_brokers: set[str] = set()
+    broker_id_to_table: dict[str, str] = {}
+    ensured_tables: set[str] = set()
     try:
         conn.execute("PRAGMA journal_mode=WAL")
         ensure_meta_tables(conn)
 
         for row in rows:
+            fetched_rows += 1
             broker_id = str(row.get("securities_trader_id", "")).strip()
             broker_name = str(row.get("securities_trader", "")).strip()
             if not broker_id:
                 continue
 
-            table_name = broker_table_name(broker_id)
-            ensure_broker_table(conn, table_name)
+            table_name = broker_id_to_table.get(broker_id)
+            if not table_name:
+                table_name = broker_table_name(broker_id)
+                broker_id_to_table[broker_id] = table_name
+
+            if table_name not in ensured_tables:
+                ensure_broker_table(conn, table_name)
+                ensured_tables.add(table_name)
             conn.execute(
                 """
                 INSERT INTO broker_tables (
@@ -336,6 +347,9 @@ def save_to_sqlite(
             inserted_rows += cur.rowcount
             touched_brokers.add(broker_id)
 
+            if fetched_rows % 20000 == 0:
+                conn.commit()
+
         conn.execute(
             """
             INSERT INTO fetch_history (
@@ -343,13 +357,13 @@ def save_to_sqlite(
             )
             VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (DATASET, stock_id, start_date, end_date, len(rows), inserted_rows),
+            (DATASET, stock_id, start_date, end_date, fetched_rows, inserted_rows),
         )
         conn.commit()
     finally:
         conn.close()
 
-    return len(rows), inserted_rows, len(touched_brokers)
+    return fetched_rows, inserted_rows, len(touched_brokers)
 
 
 def main() -> int:
