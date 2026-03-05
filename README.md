@@ -213,6 +213,30 @@ python finmind_warrant_list_by_target.py --stock-id 2330 --print-limit 100
 python finmind_warrant_list_by_target.py --stock-id 2330 --start-date 2020-04-06 --db-path data/2330.sqlite --table-name twse_warrant_summary --replace
 ```
 
+## 9) 下載 `TaiwanStockHoldingSharesPer` 並寫入 SQLite
+
+個股區間模式（`stock_id + start_date + end_date`）：
+
+```bash
+python finmind_holding_shares_per_to_sqlite.py --stock-id 2330 --start-date 2020-01-01 --end-date 2026-03-05
+```
+
+全市場單日模式（backer/sponsor）：
+
+```bash
+python finmind_holding_shares_per_to_sqlite.py --start-date 2026-02-26
+```
+
+預設資料表：
+- `stock_holding_shares_per`：`date, stock_id, HoldingSharesLevel, people, percent, unit`
+- `fetch_history`：每次抓取寫入紀錄
+
+可選 SQLite 參數：
+
+```bash
+python finmind_holding_shares_per_to_sqlite.py --stock-id 2330 --start-date 2020-01-01 --end-date 2026-03-05 --db-path data/2330.sqlite --table-name twse_holding_shares_per --replace
+```
+
 ## 加權計算方式
 
 - 分組鍵：`date + stock_id + securities_trader_id + securities_trader`
