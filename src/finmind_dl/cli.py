@@ -11,7 +11,16 @@ from typing import Any
 from finmind_dl.core.config import resolve_token
 from finmind_dl.core.history import build_requested_params, new_run_id, try_log_meta_run
 from finmind_dl.core.http_client import APIError
-from finmind_dl.datasets import broker, daily, holding_shares, margin, price, price_adj, warrant
+from finmind_dl.datasets import (
+    broker,
+    daily,
+    holding_shares,
+    margin,
+    price,
+    price_adj,
+    stock_info,
+    warrant,
+)
 
 
 def _add_common_args(parser: argparse.ArgumentParser) -> None:
@@ -146,6 +155,19 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common_args(hold_parser)
     hold_parser.set_defaults(command="holding-shares", handler=holding_shares.run)
 
+    stock_info_parser = subparsers.add_parser(
+        "stock-info",
+        help="Fetch TaiwanStockInfo into stock_info",
+        description="Fetch TaiwanStockInfo into stock_info",
+    )
+    stock_info_parser.add_argument(
+        "--start-date",
+        default=None,
+        help="Optional start date YYYY-MM-DD",
+    )
+    _add_common_args(stock_info_parser)
+    stock_info_parser.set_defaults(command="stock-info", handler=stock_info.run)
+
     return parser
 
 
@@ -227,6 +249,15 @@ def _fallback_context(args: argparse.Namespace) -> dict[str, Any]:
             "start_date": getattr(args, "start_date", None),
             "end_date": getattr(args, "end_date", None),
             "db_path": db_path,
+        }
+    if command == "stock-info":
+        return {
+            "dataset": stock_info.DATASET,
+            "stock_id": "__ALL__",
+            "query_mode": "all_market_snapshot",
+            "start_date": getattr(args, "start_date", None),
+            "end_date": None,
+            "db_path": Path(getattr(args, "db_path")) if getattr(args, "db_path", None) else Path("stock_info.sqlite"),
         }
 
     return {

@@ -57,6 +57,18 @@ class CliValidationTests(unittest.TestCase):
         )
         self.assertEqual(code, 2)
 
+    def test_stock_info_invalid_date_returns_2(self) -> None:
+        code = main(
+            [
+                "stock-info",
+                "--start-date",
+                "2026-99-01",
+                "--token",
+                "dummy",
+            ]
+        )
+        self.assertEqual(code, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

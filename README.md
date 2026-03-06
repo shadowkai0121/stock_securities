@@ -99,6 +99,12 @@ finmind-dl holding-shares --stock-id 2330 --start-date 2020-01-01 --end-date 202
 finmind-dl holding-shares --all-market-date 2026-03-05
 ```
 
+### stock-info (all-market stock/industry mapping)
+
+```bash
+finmind-dl stock-info --start-date 2019-01-01 --db-path data/stock_info.sqlite
+```
+
 ## Default DB Output Rules
 
 - Commands with `--stock-id`: `<stock_id>.sqlite`
@@ -121,6 +127,7 @@ finmind-dl holding-shares --all-market-date 2026-03-05
 - `broker_trades`
 - `warrant_summary`
 - `holding_shares_per`
+- `stock_info`
 
 ## Compatibility Note
 
@@ -154,3 +161,15 @@ python -m jupyter nbconvert --to notebook --execute papers/thesis_biotech_valida
 ```
 
 Default output files are written into `papers/` (report + CSV summaries).
+
+## MA Cross Thesis Pipeline
+
+Industry-level MA cross thesis batch pipeline:
+
+```bash
+python strategies/ma-cross/thesis_pipeline.py
+```
+
+This will:
+- download `price_adj_daily` into `data/<stock_id>.sqlite`
+- generate thesis outputs under `strategies/ma-cross/outputs/thesis/`

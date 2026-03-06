@@ -30,6 +30,7 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("meta_runs", tables)
         self.assertIn("price_daily", tables)
         self.assertIn("broker_trades", tables)
+        self.assertIn("stock_info", tables)
 
 
 if __name__ == "__main__":

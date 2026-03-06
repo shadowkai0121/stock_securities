@@ -141,6 +141,19 @@ CREATE TABLE IF NOT EXISTS holding_shares_per (
 
 CREATE INDEX IF NOT EXISTS idx_holding_shares_per_date_stock
 ON holding_shares_per (date, stock_id);
+
+CREATE TABLE IF NOT EXISTS stock_info (
+    date TEXT,
+    stock_id TEXT NOT NULL,
+    stock_name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    industry_category TEXT,
+    inserted_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (date, stock_id, stock_name, type, industry_category)
+);
+
+CREATE INDEX IF NOT EXISTS idx_stock_info_date_stock
+ON stock_info (date, stock_id);
 """
 
 
