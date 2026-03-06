@@ -213,3 +213,7 @@ papers/*
 !papers/thesis_biotech_validation.ipynb
 !papers/thesis_biotech_validation_config.json
 !papers/thesis_biotech_validation_utils.py
+
+# Thesis pipeline temp artifacts
+strategies/ma-cross/outputs/thesis/robust_table/_fill_price_daily_missing/
+strategies/ma-cross/outputs/thesis/robust_table/price_daily_missing_universe.csv

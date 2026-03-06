@@ -313,9 +313,7 @@ $$
 各產業在不同成本下的 `Applicability_j` 詳見 `outputs/thesis/robust_fee/table_applicability_by_fee.csv`。
 
 ### R2：價格表替代（`price_adj_daily` vs `price_daily`）
-以 `price_daily`（未調整價格）重跑主流程後，整體 OOS 勝率為 0.383（1358 檔；見 `outputs/thesis/robust_table/price_daily/stock_oos_results.csv`）。與 `price_adj_daily` 的差異可由 `outputs/thesis/robust_table/table_compare_adj_vs_raw.csv` 觀察；在本次可取得之樣本下，`applicability_raw - applicability_adj` 的平均差為 0.090、中位數差為 0.067。
-
-需注意：本專案環境中 `price_daily` 資料覆蓋受 FinMind API 配額影響，故 `price_daily` 之樣本數小於主分析（1358 vs 1678），比較結果可能同時反映「樣本組成差異」而非純粹「調整/未調整價格差異」。
+以 `price_daily`（未調整價格）重跑主流程後，整體 OOS 勝率為 0.395（1682 檔；見 `outputs/thesis/robust_table/price_daily/stock_oos_results.csv`）。與 `price_adj_daily` 的差異可由 `outputs/thesis/robust_table/table_compare_adj_vs_raw.csv` 觀察；在本次可取得之樣本下，`applicability_raw - applicability_adj` 的平均差為 0.090、中位數差為 0.061。
 
 ### R3：子樣本切分（2010-2014, 2015-2019, 2020-2025）
 本研究採「固定產業最佳參數（由主分析 Train 期決定）後，於不同市場階段重估 OOS 打敗比例」作為穩健性呈現（見 `outputs/thesis/robust_subsample/table_applicability_by_subsample.csv`）。全市場層級勝率如下（`outputs/thesis/robust_subsample/overall_applicability_by_subsample.csv`）：
@@ -338,7 +336,6 @@ $$
 - 存活者偏誤：若資料未涵蓋退市股票，可能導致樣本偏向存活公司。
 - 成本模型簡化：成本以固定 `fee_bps` 表示，未納入稅費、滑價、流動性限制等。
 - 策略限制：策略僅做多/空手，未考慮放空、融券與借券限制。
-- `price_daily` 覆蓋：未調整價格表之資料在本環境受 API 配額限制而覆蓋不全，影響 R2 的可比性。
 
 ## 9. 結論
 本研究以產業別參數最佳化與固定時間切分之 OOS 檢證，評估均線交叉策略在台灣股票市場的產業適用性差異。結果顯示 OOS 適用性比例在產業間存在差異，但在 bootstrap 推論與 FDR 校正後，多數產業不具統計顯著優勢；且最佳化參數多集中於短期均線組合，交易成本對策略勝率具有顯著影響。未來研究可從（1）取得歷史產業分類快照、（2）加入更細緻成本與滑價模型、（3）在更嚴格的樣本外設計（如 walk-forward）下驗證產業差異的穩健性，進一步提升推論可信度。

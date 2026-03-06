@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-03-05T18:27:05Z",
+  "run_at": "2026-03-06T09:45:47Z",
   "all_period": {
     "start": "2010-01-01",
     "end": "2025-12-31"
@@ -18,7 +18,7 @@
   "bootstrap_b": 5000,
   "seed": 42,
   "stock_count_total": 2129,
-  "stock_count_included": 1358,
+  "stock_count_included": 1682,
   "download_success": 2129,
   "download_failed": 0,
   "download_skipped": 2129,
