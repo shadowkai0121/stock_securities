@@ -1,9 +1,15 @@
 # 產業別視角下均線交叉策略適用性之樣本外檢證：以台灣股票市場為例
 
 ## 摘要
-本研究檢證均線交叉（moving average crossover, MA cross）策略在台灣股票市場不同產業類別中的樣本外（out-of-sample, OOS）適用性差異。研究採日資料與做多/空手（long/cash）策略，並以持倉位移避免前視偏誤：$position_t = signal_{t-1}$。為降低資料探勘偏誤，本研究採「產業別參數最佳化 + 時間切分 OOS 檢證」流程：訓練期（2010-01-01 至 2018-12-31）對每個產業在固定格點 $short\\in\\{5,10,20,30,40\\}$、$long\\in\\{20,60,120,200\\},\\,long>short$ 以 Sharpe ratio（$rf=0$）之產業內中位數最大化選取最佳參數 $(s^*_j,l^*_j)$；測試期（2019-01-01 至 2025-12-31）將該參數套用於產業內所有股票進行 OOS 評估。主適用性指標定義為產業內股票在測試期「策略總報酬大於 buy-and-hold（BH）總報酬」的比例 $Applicability_j = \\frac{1}{N_j}\\sum_i \\mathbb{1}(TR^{strat}_i>TR^{bh}_i)$，並以股票為抽樣單位 bootstrap（$B=5000$）建立 95% 信賴區間、以 $H_1: Applicability_j>0.5$ 計算 one-sided $p$ 值，再以 Benjamini–Hochberg（BH）法進行 FDR 校正（$q=0.05$）。
+本研究檢證均線交叉（moving average crossover, MA cross）策略在台灣股票市場不同產業類別中的樣本外（out-of-sample, OOS）適用性差異。研究採日資料與做多/空手（long/cash）策略，並以持倉位移避免前視偏誤： $position_t = signal_{t-1}$ 。為降低資料探勘偏誤，本研究採「產業別參數最佳化 + 時間切分 OOS 檢證」流程：訓練期（2010-01-01 至 2018-12-31）對每個產業在固定格點 $short\in\{5,10,20,30,40\}$ 、 $long\in\{20,60,120,200\},\,long>short$ 以 Sharpe ratio（ $rf=0$ ）之產業內中位數最大化選取最佳參數 $(s^*_j,l^*_j)$ ；測試期（2019-01-01 至 2025-12-31）將該參數套用於產業內所有股票進行 OOS 評估。主適用性指標定義為產業內股票在測試期「策略總報酬大於 buy-and-hold（BH）總報酬」的比例：
 
-實證樣本由 `TaiwanStockInfo` 產生全市場 4 碼（上市/上櫃）股票清單共 2129 檔；依交易日數門檻（Train 有效日數 $\\ge 504$，Test 有效日數 $\\ge 252$）納入 1678 檔。以 `price_adj_daily` 與交易成本 `fee_bps=10` 的主分析結果顯示：全市場 OOS 打敗 BH 的比例為 0.336；產業間適用性存在差異（介於 0.000 至 1.000，其中「存託憑證」$N=5$ 為 1.000；其餘產業最高約 0.615），但在多重比較校正後僅「存託憑證」（$N=5$）產業類別達顯著。產業最佳參數呈現高度集中，45 個產業中有 23 個選到 $(short,long)=(10,20)$、10 個選到 $(5,20)$，顯示在本研究設計下較偏短期均線組合被更常選為最適。
+$$
+Applicability_j = \frac{1}{N_j}\sum_i \mathbb{1}(TR^{strat}_i>TR^{bh}_i)
+$$
+
+並以股票為抽樣單位 bootstrap（ $B=5000$ ）建立 95% 信賴區間、以 $H_1: Applicability_j>0.5$ 計算 one-sided $p$ 值，再以 Benjamini–Hochberg（BH）法進行 FDR 校正（ $q=0.05$ ）。
+
+實證樣本由 `TaiwanStockInfo` 產生全市場 4 碼（上市/上櫃）股票清單共 2129 檔；依交易日數門檻（Train 有效日數 $\ge 504$ ，Test 有效日數 $\ge 252$ ）納入 1678 檔。以 `price_adj_daily` 與交易成本 `fee_bps=10` 的主分析結果顯示：全市場 OOS 打敗 BH 的比例為 0.336；產業間適用性存在差異（介於 0.000 至 1.000，其中「存託憑證」 $N=5$ 為 1.000；其餘產業最高約 0.615），但在多重比較校正後僅「存託憑證」（ $N=5$ ）產業類別達顯著。產業最佳參數呈現高度集中，45 個產業中有 23 個選到 $(short,long)=(10,20)$ 、10 個選到 $(5,20)$ ，顯示在本研究設計下較偏短期均線組合被更常選為最適。
 
 關鍵字：均線交叉、產業別、樣本外檢證、Sharpe ratio、bootstrap、多重比較、台灣股票市場
 
@@ -22,7 +28,7 @@
 ### 3.1 價格資料
 - 資料來源：FinMind 日頻資料 `TaiwanStockPriceAdj`，寫入各股票 SQLite：`data/<stock_id>.sqlite` 的 `price_adj_daily` 表。
 - 資料清理：排除 `is_placeholder = 1` 之占位資料列；排除 `close` 為空或非正值之資料列。
-- 報酬計算：採 close-to-close 日報酬 $ret_t = \\frac{close_t}{close_{t-1}} - 1$。
+- 報酬計算：採 close-to-close 日報酬 $ret_t = \frac{close_t}{close_{t-1}} - 1$ 。
 
 ### 3.2 產業分類與股票清單
 - 股票清單與產業分類來源：FinMind `TaiwanStockInfo`。
@@ -34,48 +40,82 @@
 - 測試期（Test）：2019-01-01 至 2025-12-31
 
 對每檔股票，以有效交易日（排除 placeholder 與缺值）計：
-- Train 有效交易日數 $\\ge 504$（約 2 年）
-- Test 有效交易日數 $\\ge 252$（約 1 年）
+- Train 有效交易日數 $\ge 504$ （約 2 年）
+- Test 有效交易日數 $\ge 252$ （約 1 年）
 未達門檻者不納入該產業樣本。
 
 本次主分析中，全市場 4 碼上市/上櫃股票共 2129 檔，通過門檻納入 1678 檔（詳見 Table 1 與 `outputs/thesis/universe.csv`）。
 
 ## 4. 方法
 ### 4.1 策略定義（與 `strategies/ma-cross/backtest.py` 一致）
-令 $close_t$ 為 $t$ 日收盤價。簡單移動平均（SMA）為：$SMA_{w,t} = \\frac{1}{w}\\sum_{k=0}^{w-1} close_{t-k}$。
+令 $close_t$ 為 $t$ 日收盤價。簡單移動平均（SMA）為：
+
+$$
+SMA_{w,t} = \frac{1}{w}\sum_{k=0}^{w-1} close_{t-k}
+$$
 
 交易訊號定義為：
-- $signal_t = 1$ 若 $SMA_{short,t} > SMA_{long,t}$，否則 $signal_t = 0$。
-- 暖機期（任一 SMA 不可得）強制 $signal_t = 0$。
+- $signal_t = 1$ 若 $SMA_{short,t} > SMA_{long,t}$ ，否則 $signal_t = 0$ 。
+- 暖機期（任一 SMA 不可得）強制 $signal_t = 0$ 。
 
-避免前視偏誤，本研究採用持倉位移：$position_t = signal_{t-1}$。
+避免前視偏誤，本研究採用持倉位移： $position_t = signal_{t-1}$ 。
 
 策略與基準之日報酬為：
-- $ret_t = \\frac{close_t}{close_{t-1}} - 1$
-- $cost_t = |signal_{t-1} - signal_{t-2}| \\cdot \\frac{fee\\_bps}{10000}$
-- $strategy\\_ret_t = position_t \\cdot ret_t - cost_t$
-- $bh\\_ret_t = ret_t$
+- $ret_t = \frac{close_t}{close_{t-1}} - 1$
+- $cost_t = |signal_{t-1} - signal_{t-2}| \cdot \frac{fee\_bps}{10000}$
+- $strategy\_ret_t = position_t \cdot ret_t - cost_t$
+- $bh\_ret_t = ret_t$
 
 ### 4.2 績效指標
-年度交易日數採 252、無風險利率 $rf=0$：
-- Total return：$TR = \\prod_t (1 + strategy\\_ret_t) - 1$
-- Sharpe：$Sharpe = \\frac{\\mathbb{E}[strategy\\_ret]}{\\sigma(strategy\\_ret)}\\sqrt{252}$（$\\sigma=0$ 定義為 NaN）
-- MDD：$MDD = \\min_t\\left(\\frac{equity_t}{\\max_{s\\le t} equity_s} - 1\\right)$
+年度交易日數採 252、無風險利率 $rf=0$ ：
+- Total return：
+
+$$
+TR = \prod_t (1 + strategy\_ret_t) - 1
+$$
+
+- Sharpe：
+
+$$
+Sharpe = \frac{\mathbb{E}[strategy\_ret]}{\sigma(strategy\_ret)}\sqrt{252}
+$$
+
+（ $\sigma=0$ 定義為 NaN）
+
+- MDD：
+
+$$
+MDD = \min_t\left(\frac{equity_t}{\max_{s\le t} equity_s} - 1\right)
+$$
 
 ### 4.3 產業別參數最佳化與 OOS 設計
-參數格點固定為 $short\\in\\{5,10,20,30,40\\}$、$long\\in\\{20,60,120,200\\}$ 且 $long>short$。對每個產業 $j$ 與每一組 $(s,l)$：
-1. 對產業 $j$ 內每檔股票 $i$ 計算 Train 期 Sharpe：$Sharpe_{i,j}(s,l)$。
-2. 定義產業分數：$Score_j(s,l) = median_i\\, Sharpe_{i,j}(s,l)$。
-3. 取 $Score_j(s,l)$ 最大者為該產業最佳參數 $(s^*_j,l^*_j)$。
-4. 同分 tie-break（依序）：（i）Train 期「策略總報酬 > BH 總報酬」之股票比例較高者；（ii）$long$ 較大者。
+參數格點固定為 $short\in\{5,10,20,30,40\}$ 、 $long\in\{20,60,120,200\}$ 且 $long>short$ 。對每個產業 $j$ 與每一組 $(s,l)$ ：
+1. 對產業 $j$ 內每檔股票 $i$ 計算 Train 期 Sharpe： $Sharpe_{i,j}(s,l)$ 。
+2. 定義產業分數： $Score_j(s,l) = median_i\, Sharpe_{i,j}(s,l)$ 。
+3. 取 $Score_j(s,l)$ 最大者為該產業最佳參數 $(s^*_j,l^*_j)$ 。
+4. 同分 tie-break（依序）：（i）Train 期「策略總報酬 > BH 總報酬」之股票比例較高者；（ii） $long$ 較大者。
 
-測試期將 $(s^*_j,l^*_j)$ 套用至產業 $j$ 所有納入股票，並定義每檔股票 OOS 是否打敗 BH：$Outperform_i = \\mathbb{1}(TR^{strat}_i > TR^{bh}_i)$。產業適用性為：$Applicability_j = \\frac{1}{N_j}\\sum_i Outperform_i$。
+測試期將 $(s^*_j,l^*_j)$ 套用至產業 $j$ 所有納入股票，並定義每檔股票 OOS 是否打敗 BH：
+
+$$
+Outperform_i = \mathbb{1}(TR^{strat}_i > TR^{bh}_i)
+$$
+
+產業適用性為：
+
+$$
+Applicability_j = \frac{1}{N_j}\sum_i Outperform_i
+$$
 
 ### 4.4 統計推論與多重比較
-對每個產業 $j$：
+對每個產業 $j$ ：
 - 以股票為抽樣單位、放回抽樣 bootstrap $B=5000$ 次，得到 $Applicability_j$ 的 95% CI（分位數法）。
-- 檢定 $H_1: Applicability_j > 0.5$，以 bootstrap 分布估計 one-sided $p$ 值：$p_j = \\frac{\\#\\{Applicability_j^{(b)}\\le 0.5\\}+1}{B+1}$。
-- 對所有產業 $p$ 值以 Benjamini–Hochberg 法進行 FDR 控制（$q=0.05$），得到 `bh_significant`。
+- 檢定 $H_1: Applicability_j > 0.5$ ，以 bootstrap 分布估計 one-sided $p$ 值：
+
+$$
+p_j = \frac{\#\{Applicability_j^{(b)}\le 0.5\}+1}{B+1}
+$$
+- 對所有產業 $p$ 值以 Benjamini–Hochberg 法進行 FDR 控制（ $q=0.05$ ），得到 `bh_significant`。
 
 ## 5. 實證結果
 本節以表圖呈現主要發現；完整中間資料與輸出檔位於 `strategies/ma-cross/outputs/thesis/`。
@@ -83,7 +123,7 @@
 ### Table 1. 樣本描述
 （來源：`outputs/thesis/table1_sample_description.csv`）
 
-註：`n_stocks` 為通過納入門檻（Train 有效交易日數 $\\ge 504$、Test 有效交易日數 $\\ge 252$）之股票數；`*_days_median` 為有效交易日數中位數（排除 placeholder 與 `close<=0`）。
+註：`n_stocks` 為通過納入門檻（Train 有效交易日數 $\ge 504$ 、Test 有效交易日數 $\ge 252$ ）之股票數；`*_days_median` 為有效交易日數中位數（排除 placeholder 與 `close<=0`）。
 
 | industry | n_stocks | train_days_median | test_days_median |
 | --- | --- | --- | --- |
@@ -189,7 +229,7 @@
 ### Table 3（主表）. 產業 OOS 適用性比例 + CI + FDR
 （來源：`outputs/thesis/table3_applicability_oos.csv`）
 
-註：`applicability` 為 Test 期策略總報酬大於 BH 的股票比例；`ci_low/ci_high` 為 bootstrap 95% CI；`p_value` 為 one-sided 檢定 $H_1: Applicability_j>0.5$；`bh_significant` 為 BH-FDR 校正（$q=0.05$）後之顯著性標記。
+註：`applicability` 為 Test 期策略總報酬大於 BH 的股票比例；`ci_low/ci_high` 為 bootstrap 95% CI；`p_value` 為 one-sided 檢定 $H_1: Applicability_j>0.5$ ；`bh_significant` 為 BH-FDR 校正（ $q=0.05$ ）後之顯著性標記。
 
 | industry | n_stocks | applicability | ci_low | ci_high | p_value | bh_significant |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -254,8 +294,8 @@
 ![](outputs/thesis/figure2_best_params_heatmap.png)
 
 ### 主要發現摘要（對應 RQ）
-- RQ1（產業差異）：產業適用性比例存在差異（例如「觀光餐旅」「電子工業」達 0.615），但在 bootstrap 檢定與 FDR 校正後，多數產業無法拒絕 $Applicability_j \\le 0.5$；僅「存託憑證」（$N=5$）在本次設定下達顯著，惟樣本數較小需審慎解讀。
-- RQ2（參數結構）：最佳參數高度集中於短期組合，45 個產業中 23 個選到 $(10,20)$、10 個選到 $(5,20)$；顯示以 Sharpe 中位數最大化的產業最佳化在本市場資料中偏好較短視窗。
+- RQ1（產業差異）：產業適用性比例存在差異（例如「觀光餐旅」「電子工業」達 0.615），但在 bootstrap 檢定與 FDR 校正後，多數產業無法拒絕 $Applicability_j \le 0.5$ ；僅「存託憑證」（ $N=5$ ）在本次設定下達顯著，惟樣本數較小需審慎解讀。
+- RQ2（參數結構）：最佳參數高度集中於短期組合，45 個產業中 23 個選到 $(10,20)$ 、10 個選到 $(5,20)$ ；顯示以 Sharpe 中位數最大化的產業最佳化在本市場資料中偏好較短視窗。
 - 全市場層級：在 Test 期，納入股票 OOS 打敗 BH 的比例為 0.336（1678 檔中約三分之一）；股票層級的 Test 超額報酬中位數為 -0.308（`test_excess_return`），顯示在本研究成本與訊號定義下策略整體上並未普遍優於 BH。
 
 ## 6. 穩健性檢查
@@ -312,3 +352,4 @@
 
 ## 參考文獻（待補）
 - （依投稿格式補齊）
+
