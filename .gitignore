@@ -209,7 +209,6 @@ __marimo__/
 *.sqlite*
 
 # Project outputs
-outputs/
 papers/*
 !papers/thesis_biotech_validation.ipynb
 !papers/thesis_biotech_validation_config.json

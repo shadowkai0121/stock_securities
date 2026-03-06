@@ -1,0 +1,27 @@
+{
+  "run_at": "2026-03-05T18:23:01Z",
+  "all_period": {
+    "start": "2010-01-01",
+    "end": "2025-12-31"
+  },
+  "train_period": {
+    "start": "2010-01-01",
+    "end": "2018-12-31"
+  },
+  "test_period": {
+    "start": "2019-01-01",
+    "end": "2025-12-31"
+  },
+  "industry_target_date": "2019-01-01",
+  "industry_reference_date": "2026-03-05",
+  "fee_bps": 0.0,
+  "bootstrap_b": 5000,
+  "seed": 42,
+  "stock_count_total": 2129,
+  "stock_count_included": 1678,
+  "download_success": 2129,
+  "download_failed": 0,
+  "download_skipped": 2129,
+  "include_price_daily": false,
+  "table": "price_adj_daily"
+}
