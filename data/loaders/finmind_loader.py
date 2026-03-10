@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from finmind_dl.core.config import resolve_token
+from finmind_dl.core.history import build_requested_params, new_run_id, try_log_meta_run
 from finmind_dl.datasets import broker, daily, holding_shares, margin, price, price_adj, stock_info, warrant
 
 
@@ -89,7 +90,26 @@ class FinMindLoader:
 
     def _run_internal(self, handler: Any, args: Namespace) -> IngestionResult:
         payload = handler(args, self._token)
-        return IngestionResult.from_payload(payload)
+        result = IngestionResult.from_payload(payload)
+
+        db_path = result.db_path.resolve()
+        if db_path.exists():
+            try_log_meta_run(
+                db_path,
+                run_id=new_run_id(),
+                dataset=result.dataset,
+                stock_id=result.stock_id,
+                query_mode=result.query_mode,
+                start_date=result.start_date,
+                end_date=result.end_date,
+                requested_params_json=build_requested_params(args),
+                fetched_rows=result.fetched_rows,
+                inserted_rows=result.inserted_rows,
+                status="success",
+                error_message=None,
+            )
+
+        return result
 
     def _run_subprocess(self, command: list[str]) -> IngestionResult:
         full_cmd = [self._finmind_command, *command, "--token", self._token]

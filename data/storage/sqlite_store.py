@@ -52,6 +52,13 @@ class SQLiteStore:
             ).fetchone()
         return row is not None
 
+    def list_columns(self, table: str) -> list[str]:
+        """Return ordered column names for ``table``."""
+
+        with self.connect() as conn:
+            rows = conn.execute(f'PRAGMA table_info("{table}")').fetchall()
+        return [str(row[1]) for row in rows]
+
     def row_count(self, table: str, where: str | None = None, params: Sequence[Any] | None = None) -> int:
         sql = f'SELECT COUNT(*) FROM "{table}"'
         if where:
@@ -81,6 +88,15 @@ class SQLiteStore:
 
         with self.connect() as conn:
             return pd.read_sql_query(sql, conn, params=list(params or ()))
+
+    def fetch_one(self, sql: str, params: Sequence[Any] | None = None) -> tuple[Any, ...] | None:
+        """Execute a read-only query and return the first row."""
+
+        with self.connect() as conn:
+            row = conn.execute(sql, tuple(params or ())).fetchone()
+        if row is None:
+            return None
+        return tuple(row)
 
     def min_max_date(self, table: str, *, date_col: str = "date") -> tuple[str | None, str | None]:
         sql = f'SELECT MIN("{date_col}"), MAX("{date_col}") FROM "{table}"'

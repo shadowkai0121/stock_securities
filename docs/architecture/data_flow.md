@@ -2,7 +2,7 @@
 
 Canonical data movement is intentionally one-directional:
 
-`FinMind API -> finmind-dl -> SQLite -> research loader -> universe -> feature store -> strategy -> backtest -> statistics -> experiment registry -> report`
+`FinMind API -> finmind-dl -> SQLite -> research loader -> universe -> feature store -> strategy -> backtest -> statistics -> experiment run registry -> report`
 
 ## Principles
 
@@ -19,4 +19,5 @@ Canonical data movement is intentionally one-directional:
 5. `ResearchDataLoader` reads local tables into analysis frames.
 6. Universe and features are built from those local frames.
 7. Strategy and backtest run without any remote data access.
-8. Outputs are registered under `experiments/<experiment_id>/`.
+8. Rerun outputs are registered under `experiments/<research_id>/runs/<run_id>/`.
+9. `latest.json` and `run_index.json` provide lightweight filesystem pointers for comparison tooling.

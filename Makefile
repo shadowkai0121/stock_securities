@@ -1,4 +1,4 @@
-.PHONY: install test lint download-sample-data run-example-experiment
+.PHONY: install test lint download-sample-data run-example-experiment run-example-research rerun-spec compare-example-runs
 
 install:
 	python -m pip install --upgrade pip
@@ -16,3 +16,12 @@ download-sample-data:
 
 run-example-experiment:
 	python experiments/example_ma_cross/run_experiment.py --config experiments/example_ma_cross/config.json
+
+run-example-research:
+	python -m research.run --spec research_specs/ma_cross_example_v1.json --data-as-of 2025-12-31
+
+rerun-spec:
+	python -m research.run --spec $(SPEC) --data-as-of $(DATA_AS_OF)
+
+compare-example-runs:
+	python -m research.compare_runs --research-id ma_cross_example_v1

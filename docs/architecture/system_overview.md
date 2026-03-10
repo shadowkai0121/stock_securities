@@ -15,8 +15,10 @@ This repository now acts as a reproducible quantitative research operating syste
 7. Backtest Layer: `research/backtest_engine.py`
 8. Statistical Validation Layer: `research/statistics.py`
 9. Experiment Tracking Layer: `experiments/registry.py`
-10. Agent Operating Layer: `agents/`
-11. Reporting Layer: `research/report_generator.py`
+10. Research Spec Layer: `research/specs.py`, `research_specs/`
+11. Rerun Orchestration Layer: `research/run.py`, `research/compare_runs.py`
+12. Agent Operating Layer: `agents/`
+13. Reporting Layer: `research/report_generator.py`
 
 ## Why `finmind-dl` Exists
 
@@ -35,4 +37,5 @@ Keeping this boundary stable prevents strategy modules from embedding fragile AP
 - local persisted datasets as source of truth
 - cached feature panels with versioned keys
 - experiment folders with config/metrics/artifacts/report
+- append-only research run folders with resolved specs and data manifests
 - optional git commit hash capture in registry metadata

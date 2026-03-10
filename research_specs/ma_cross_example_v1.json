@@ -1,0 +1,79 @@
+{
+  "research_id": "ma_cross_example_v1",
+  "title": "MA Cross Example",
+  "description": "Re-runnable MA crossover study using adjusted local prices for a fixed Taiwan equity basket.",
+  "pipeline_id": "ma_crossover",
+  "required_datasets": [
+    "stock_info",
+    "price_adj"
+  ],
+  "data_update_policy": {
+    "mode": "ensure_local",
+    "auto_update_missing": true,
+    "auto_update_stale": true,
+    "stock_info_start_date": "2020-01-01",
+    "use_subprocess": false
+  },
+  "analysis_period": {
+    "start_date": "2024-01-01"
+  },
+  "universe_definition": {
+    "stock_ids": [
+      "2330",
+      "2317",
+      "2454"
+    ],
+    "exclude_etf": true,
+    "exclude_warrant": true,
+    "min_history_days": 120,
+    "inactive_lookback_days": 60,
+    "min_liquidity": null,
+    "adjusted_price": true
+  },
+  "feature_definition": {
+    "ma_windows": [
+      5,
+      20,
+      60
+    ],
+    "vol_windows": [
+      20,
+      60
+    ],
+    "use_margin": false,
+    "use_broker": false,
+    "use_holding_shares": false
+  },
+  "strategy_definition": {
+    "name": "ma_crossover",
+    "short_window": 20,
+    "long_window": 60,
+    "use_adjusted_price": true,
+    "use_legacy_impl": true
+  },
+  "backtest_definition": {
+    "transaction_cost_bps": 10.0,
+    "slippage_bps": 2.0,
+    "lag_positions": 1,
+    "trading_days_per_year": 252
+  },
+  "evaluation_definition": {
+    "newey_west_lags": null,
+    "bootstrap_samples": 2000,
+    "seed": 42,
+    "walk_forward_train_window": 126,
+    "walk_forward_test_window": 63,
+    "walk_forward_step": 63,
+    "walk_forward_expanding": false,
+    "train_ratio": 0.6,
+    "valid_ratio": 0.2,
+    "rolling_window": 20,
+    "expanding_min_periods": 20
+  },
+  "report_definition": {
+    "write_timeseries_csv": true,
+    "write_universe_csv": true,
+    "write_features_csv": false
+  },
+  "rerun_mode": "fixed_spec"
+}

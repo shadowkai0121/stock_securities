@@ -6,6 +6,7 @@ This repository now combines:
 
 - `finmind-dl`: the canonical data ingestion CLI/tooling layer
 - a local-data-first quantitative research platform with orchestrated experiment runs
+- an append-only `research spec + run` rerun system for repeatable studies
 
 `finmind-dl` remains a first-class component and is the official ingestion interface.
 
@@ -13,16 +14,39 @@ This repository now combines:
 
 Canonical flow:
 
-`FinMind API -> finmind-dl -> SQLite -> research data loader -> universe -> feature store -> strategy -> backtest -> statistics -> experiment registry -> report`
+`FinMind API -> finmind-dl -> SQLite -> research data loader -> universe -> feature store -> strategy -> backtest -> statistics -> experiment run registry -> report`
 
 Research code should read local persisted datasets only, not remote APIs.
+
+## Research Spec + Run
+
+A research spec defines the study once under `research_specs/`.
+
+A run executes that spec against a local `data_as_of` cutoff and writes a new append-only folder:
+
+`experiments/<research_id>/runs/<run_id>/`
+
+Each run captures:
+
+- `resolved_spec.json`
+- `data_manifest.json`
+- `metrics.json`
+- `report.md`
+- `artifacts.json`
+- `run.log`
+- `plots/`
+
+This keeps prior runs immutable while making reruns auditable and comparable.
 
 ## New Platform Entrypoints
 
 - Python ingestion wrapper: `data/loaders/finmind_loader.py`
 - Research orchestrator: `research/orchestrator.py`
+- Research rerun runner: `research/run.py`
+- Research run comparison CLI: `research/compare_runs.py`
 - Experiment registry: `experiments/registry.py`
 - Example end-to-end run: `experiments/example_ma_cross/run_experiment.py`
+- Example research spec: `research_specs/ma_cross_example_v1.json`
 
 ## Quickstart (Platform)
 
@@ -30,12 +54,23 @@ Research code should read local persisted datasets only, not remote APIs.
 make install
 make download-sample-data
 make run-example-experiment
+make run-example-research
 ```
 
 Or run directly:
 
 ```bash
 python experiments/example_ma_cross/run_experiment.py --config experiments/example_ma_cross/config.json
+```
+
+```bash
+python -m research.run --spec research_specs/ma_cross_example_v1.json --data-as-of 2025-12-31
+```
+
+Compare runs:
+
+```bash
+python -m research.compare_runs --research-id ma_cross_example_v1
 ```
 
 If local data is missing, set token first:
@@ -218,6 +253,7 @@ This will:
 
 - system overview: `docs/architecture/system_overview.md`
 - data flow: `docs/architecture/data_flow.md`
+- rerun workflow: `docs/research-workflow/rerun_workflow.md`
 - research pipeline: `docs/research-workflow/research_pipeline.md`
 - experiment lifecycle: `docs/research-workflow/experiment_lifecycle.md`
 - data catalog docs: `docs/data-catalog/`

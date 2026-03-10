@@ -6,6 +6,14 @@
 - create folder and fixed artifact structure
 - snapshot config and metadata
 
+## Rerun Create
+
+- allocate unique `run_id`
+- create `experiments/<research_id>/runs/<run_id>/`
+- snapshot `resolved_spec.json`
+- snapshot `data_manifest.json`
+- seed `run.log`, `metrics.json`, `artifacts.json`, `report.md`
+
 ## Execute
 
 - run orchestrator pipeline end-to-end
@@ -27,3 +35,9 @@
 ## Non-Overwrite Policy
 
 Historical experiment folders are immutable records and must not be overwritten.
+
+The same rule now applies to research reruns:
+
+- each `run_id` is append-only
+- `latest.json` and `run_index.json` are convenience pointers only
+- previous run folders remain untouched

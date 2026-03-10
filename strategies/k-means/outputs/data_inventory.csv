@@ -1,2 +1,0 @@
-db_file,stock_id,table_name,status,reason,row_count,start_date,end_date,valid_log_return_observations,analysis_status
-2330.sqlite,2330,price_adj_daily,empty_table,Table 'price_adj_daily' contains no rows.,0,,,0,empty_table
