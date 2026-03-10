@@ -29,7 +29,7 @@ def main(argv: list[str] | None = None) -> int:
     loader = FinMindLoader(token=args.token)
     stock_info_result = loader.download_stock_info(
         start_date=args.start_date,
-        db_path=data_root / "stock_info.sqlite",
+        db_path=data_root / "market.sqlite",
     )
     print(f"[stock_info] inserted={stock_info_result.inserted_rows} db={stock_info_result.db_path}")
 

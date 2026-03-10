@@ -56,6 +56,18 @@ def _create_price_db(db_path: Path, stock_id: str) -> None:
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE holding_shares_per (
+            date TEXT,
+            holding_shares_level TEXT,
+            people INTEGER,
+            percent REAL,
+            unit INTEGER,
+            query_mode TEXT
+        )
+        """
+    )
 
     rows_price = [
         ("2024-01-02", stock_id, 100.0, 101.0, 99.0, 100.0, 1000, 100000, 0.1, 10, 0),
@@ -89,12 +101,16 @@ def _create_price_db(db_path: Path, stock_id: str) -> None:
         """,
         ("2024-01-03", stock_id, "A001", 500.0, 200.0, 0),
     )
+    conn.execute(
+        "INSERT INTO holding_shares_per VALUES (?, ?, ?, ?, ?, ?)",
+        ("2024-01-03", "1-5", 100, 10.5, 1000, "stock_range"),
+    )
     conn.commit()
     conn.close()
 
 
 def _create_shared_dbs(root: Path) -> None:
-    stock_info_db = root / "stock_info.sqlite"
+    stock_info_db = root / "market.sqlite"
     conn = sqlite3.connect(stock_info_db)
     conn.execute(
         """
@@ -110,28 +126,6 @@ def _create_shared_dbs(root: Path) -> None:
     conn.execute(
         "INSERT INTO stock_info VALUES (?, ?, ?, ?, ?)",
         ("2024-01-01", "2330", "TSMC", "twse", "Semiconductor"),
-    )
-    conn.commit()
-    conn.close()
-
-    holding_db = root / "holding_shares_per.sqlite"
-    conn = sqlite3.connect(holding_db)
-    conn.execute(
-        """
-        CREATE TABLE holding_shares_per (
-            date TEXT,
-            stock_id TEXT,
-            holding_shares_level TEXT,
-            people INTEGER,
-            percent REAL,
-            unit INTEGER,
-            query_mode TEXT
-        )
-        """
-    )
-    conn.execute(
-        "INSERT INTO holding_shares_per VALUES (?, ?, ?, ?, ?, ?, ?)",
-        ("2024-01-03", "2330", "1-5", 100, 10.5, 1000, "stock_range"),
     )
     conn.commit()
     conn.close()

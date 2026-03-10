@@ -177,14 +177,18 @@ finmind-dl holding-shares --all-market-date 2026-03-05
 ### stock-info (all-market stock/industry mapping)
 
 ```bash
-finmind-dl stock-info --start-date 2019-01-01 --db-path data/stock_info.sqlite
+finmind-dl stock-info --start-date 2019-01-01 --db-path data/market.sqlite
 ```
 
 ## Default DB Output Rules
 
 - Commands with `--stock-id`: `<stock_id>.sqlite`
-- `holding-shares --all-market-date`: `holding_shares_per.sqlite`
+- `stock-info`: `market.sqlite`
+- `holding-shares --all-market-date`: `market.sqlite`
+- Per-stock DBs are single-id only; writing a different `--stock-id` into an existing DB returns an error.
 - `--db-path` overrides default.
+
+Legacy shared files (`stock_info.sqlite`, `holding_shares_per.sqlite`) are migrated into `market.sqlite` automatically on first market-scoped write.
 
 ## Exit Codes
 

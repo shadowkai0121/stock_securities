@@ -12,7 +12,7 @@ from finmind_dl.core.convert import as_float, as_text
 from finmind_dl.core.date_utils import parse_iso_date
 from finmind_dl.core.http_client import fetch_dataset
 from finmind_dl.core.sqlite_store import open_connection, prepare_db_path
-from finmind_dl.schema import init_schema
+from finmind_dl.core.storage_layout import ensure_stock_db_layout
 
 from .common import default_stock_db_path, summarize_result
 
@@ -110,16 +110,16 @@ def run(args: Namespace, token: str) -> dict[str, Any]:
     conn = open_connection(db_path)
     inserted_rows = 0
     try:
-        init_schema(conn)
+        ensure_stock_db_layout(conn, stock_id=target_stock_id)
         for row in rows:
             cur = conn.execute(
                 """
                 INSERT INTO warrant_summary (
-                    target_stock_id, warrant_stock_id, warrant_type, date, end_date,
+                    warrant_stock_id, warrant_type, date, end_date,
                     exercise_ratio, fulfillment_price, fulfillment_method,
                     fulfillment_start_date, fulfillment_end_date, close, target_close
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(target_stock_id, warrant_stock_id, date) DO UPDATE SET
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(warrant_stock_id, date) DO UPDATE SET
                     warrant_type = COALESCE(excluded.warrant_type, warrant_summary.warrant_type),
                     end_date = COALESCE(excluded.end_date, warrant_summary.end_date),
                     exercise_ratio = COALESCE(excluded.exercise_ratio, warrant_summary.exercise_ratio),
@@ -131,7 +131,6 @@ def run(args: Namespace, token: str) -> dict[str, Any]:
                     target_close = COALESCE(excluded.target_close, warrant_summary.target_close)
                 """,
                 (
-                    row.get("target_stock_id"),
                     row.get("warrant_stock_id"),
                     row.get("warrant_type"),
                     row.get("date"),

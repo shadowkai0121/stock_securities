@@ -17,7 +17,7 @@ from research.run import main as run_main
 
 
 def _create_local_research_data(data_root: Path) -> None:
-    conn = sqlite3.connect(data_root / "stock_info.sqlite")
+    conn = sqlite3.connect(data_root / "market.sqlite")
     init_schema(conn)
     conn.execute(
         "INSERT INTO stock_info (date, stock_id, stock_name, type, industry_category) VALUES (?, ?, ?, ?, ?)",
@@ -34,13 +34,13 @@ def _create_local_research_data(data_root: Path) -> None:
     for idx in range(260):
         close *= 1.001 + ((idx % 7) - 3) * 0.00015
         date = (start + pd.Timedelta(days=idx)).strftime("%Y-%m-%d")
-        rows.append((date, "2330", close - 1, close + 1, close - 2, close, 1000 + idx, 100000 + idx, 0.1, 10, 0))
+        rows.append((date, close - 1, close + 1, close - 2, close, 1000 + idx, 100000 + idx, 0.1, 10, 0))
     conn.executemany(
         """
         INSERT INTO price_adj_daily (
-            date, stock_id, open, max, min, close, trading_volume,
+            date, open, max, min, close, trading_volume,
             trading_money, spread, trading_turnover, is_placeholder
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         rows,
     )

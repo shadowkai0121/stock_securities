@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
 from typing import Any, Callable
 
@@ -10,7 +9,7 @@ from finmind_dl.core.convert import as_int
 from finmind_dl.core.date_utils import ensure_date_range, parse_iso_date
 from finmind_dl.core.http_client import fetch_dataset
 from finmind_dl.core.sqlite_store import open_connection, prepare_db_path
-from finmind_dl.schema import init_schema
+from finmind_dl.core.storage_layout import ensure_stock_db_layout
 
 from .common import default_stock_db_path, fetch_trading_dates, summarize_result
 
@@ -58,7 +57,6 @@ def run_price_like(
             merged_rows.append(
                 {
                     "date": date_str,
-                    "stock_id": stock_id,
                     "is_placeholder": 1,
                 }
             )
@@ -71,10 +69,10 @@ def run_price_like(
     conn = open_connection(db_path)
     inserted_rows = 0
     try:
-        init_schema(conn)
+        ensure_stock_db_layout(conn, stock_id=stock_id)
 
-        value_placeholders = ", ".join(["?"] * (2 + len(column_names) + 1))
-        cols_sql = ", ".join(["date", "stock_id", *column_names, "is_placeholder"])
+        value_placeholders = ", ".join(["?"] * (1 + len(column_names) + 1))
+        cols_sql = ", ".join(["date", *column_names, "is_placeholder"])
         set_sql = ",\n                    ".join(
             [f'{name} = COALESCE(excluded.{name}, "{table_name}".{name})' for name in column_names]
         )
@@ -82,7 +80,7 @@ def run_price_like(
         sql = f'''
             INSERT INTO "{table_name}" ({cols_sql})
             VALUES ({value_placeholders})
-            ON CONFLICT(date, stock_id) DO UPDATE SET
+            ON CONFLICT(date) DO UPDATE SET
                     {set_sql},
                     is_placeholder = CASE
                         WHEN excluded.is_placeholder = 0 THEN 0
@@ -94,7 +92,6 @@ def run_price_like(
             normalized = normalizer(row)
             values = (
                 str(row.get("date", "")),
-                str(row.get("stock_id", stock_id)),
                 *normalized,
                 as_int(row.get("is_placeholder")) or 0,
             )

@@ -52,23 +52,23 @@ def _create_price_adj_db(db_path: Path, max_date: str = "2024-01-03") -> None:
     conn = sqlite3.connect(db_path)
     init_schema(conn)
     rows = [
-        ("2024-01-01", "2330", 100.0, 101.0, 99.0, 100.0, 1000, 100000, 0.1, 10, 0),
-        ("2024-01-02", "2330", 101.0, 102.0, 100.0, 101.0, 1100, 110000, 0.1, 10, 0),
-        ("2024-01-03", "2330", 102.0, 103.0, 101.0, 102.0, 1200, 120000, 0.1, 10, 0),
+        ("2024-01-01", 100.0, 101.0, 99.0, 100.0, 1000, 100000, 0.1, 10, 0),
+        ("2024-01-02", 101.0, 102.0, 100.0, 101.0, 1100, 110000, 0.1, 10, 0),
+        ("2024-01-03", 102.0, 103.0, 101.0, 102.0, 1200, 120000, 0.1, 10, 0),
     ]
     if max_date >= "2024-01-05":
         rows.extend(
             [
-                ("2024-01-04", "2330", 103.0, 104.0, 102.0, 103.0, 1300, 130000, 0.1, 10, 0),
-                ("2024-01-05", "2330", 104.0, 105.0, 103.0, 104.0, 1400, 140000, 0.1, 10, 0),
+                ("2024-01-04", 103.0, 104.0, 102.0, 103.0, 1300, 130000, 0.1, 10, 0),
+                ("2024-01-05", 104.0, 105.0, 103.0, 104.0, 1400, 140000, 0.1, 10, 0),
             ]
         )
     conn.executemany(
         """
         INSERT INTO price_adj_daily (
-            date, stock_id, open, max, min, close, trading_volume,
+            date, open, max, min, close, trading_volume,
             trading_money, spread, trading_turnover, is_placeholder
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         rows,
     )
@@ -109,14 +109,14 @@ class _FakeLoader:
         conn.executemany(
             """
             INSERT INTO price_adj_daily (
-                date, stock_id, open, max, min, close, trading_volume,
+                date, open, max, min, close, trading_volume,
                 trading_money, spread, trading_turnover, is_placeholder
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(date, stock_id) DO NOTHING
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(date) DO NOTHING
             """,
             [
-                ("2024-01-04", stock_id, 103.0, 104.0, 102.0, 103.0, 1300, 130000, 0.1, 10, 0),
-                ("2024-01-05", stock_id, 104.0, 105.0, 103.0, 104.0, 1400, 140000, 0.1, 10, 0),
+                ("2024-01-04", 103.0, 104.0, 102.0, 103.0, 1300, 130000, 0.1, 10, 0),
+                ("2024-01-05", 104.0, 105.0, 103.0, 104.0, 1400, 140000, 0.1, 10, 0),
             ],
         )
         conn.execute(
@@ -163,7 +163,7 @@ class ResearchDataStateTests(unittest.TestCase):
             data_root = root / "data"
             data_root.mkdir(parents=True, exist_ok=True)
 
-            _create_stock_info_db(data_root / "stock_info.sqlite")
+            _create_stock_info_db(data_root / "market.sqlite")
             _create_price_adj_db(data_root / "2330.sqlite", max_date="2024-01-03")
 
             catalog = load_data_catalog(ROOT / "data" / "catalog" / "data_catalog.yaml")
@@ -198,7 +198,7 @@ class ResearchDataStateTests(unittest.TestCase):
             data_root = root / "data"
             data_root.mkdir(parents=True, exist_ok=True)
 
-            _create_stock_info_db(data_root / "stock_info.sqlite")
+            _create_stock_info_db(data_root / "market.sqlite")
             _create_price_adj_db(data_root / "2330.sqlite", max_date="2024-01-05")
 
             catalog = load_data_catalog(ROOT / "data" / "catalog" / "data_catalog.yaml")

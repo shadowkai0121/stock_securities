@@ -10,9 +10,13 @@ from finmind_dl.core.convert import as_float, as_int, as_text
 from finmind_dl.core.date_utils import ensure_date_range, parse_iso_date, to_iso
 from finmind_dl.core.http_client import fetch_dataset
 from finmind_dl.core.sqlite_store import open_connection, prepare_db_path
-from finmind_dl.schema import init_schema
+from finmind_dl.core.storage_layout import (
+    ensure_market_db_layout,
+    ensure_stock_db_layout,
+    migrate_legacy_market_files,
+)
 
-from .common import default_stock_db_path, summarize_result
+from .common import default_market_db_path, default_stock_db_path, summarize_result
 
 DATASET = "TaiwanStockHoldingSharesPer"
 TABLE = "holding_shares_per"
@@ -30,7 +34,7 @@ def _resolve_mode(args: Namespace) -> tuple[str, str, str, dict[str, str], Path,
             "__ALL__",
             market_date,
             {"start_date": market_date},
-            Path(args.db_path) if args.db_path else Path("holding_shares_per.sqlite"),
+            default_market_db_path(args.db_path),
             market_date,
         )
 
@@ -62,34 +66,61 @@ def run(args: Namespace, token: str) -> dict[str, Any]:
 
     rows = fetch_dataset(DATASET, token, params)
 
+    if query_mode == "all_market_date" and not bool(args.replace):
+        migrate_legacy_market_files(db_path)
     prepare_db_path(db_path, replace=bool(args.replace))
     conn = open_connection(db_path)
     inserted_rows = 0
     try:
-        init_schema(conn)
-        for row in rows:
-            cur = conn.execute(
-                """
-                INSERT INTO holding_shares_per (
-                    date, stock_id, holding_shares_level, people, percent, unit, query_mode
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(date, stock_id, holding_shares_level) DO UPDATE SET
-                    people = COALESCE(excluded.people, holding_shares_per.people),
-                    percent = COALESCE(excluded.percent, holding_shares_per.percent),
-                    unit = COALESCE(excluded.unit, holding_shares_per.unit),
-                    query_mode = excluded.query_mode
-                """,
-                (
-                    as_text(row.get("date")) or "",
-                    as_text(row.get("stock_id")) or "",
-                    as_text(row.get("HoldingSharesLevel")) or "",
-                    as_int(row.get("people")),
-                    as_float(row.get("percent")),
-                    as_int(row.get("unit")),
-                    query_mode,
-                ),
-            )
-            inserted_rows += cur.rowcount
+        if query_mode == "all_market_date":
+            ensure_market_db_layout(conn)
+            for row in rows:
+                cur = conn.execute(
+                    """
+                    INSERT INTO holding_shares_per (
+                        date, stock_id, holding_shares_level, people, percent, unit, query_mode
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(date, stock_id, holding_shares_level) DO UPDATE SET
+                        people = COALESCE(excluded.people, holding_shares_per.people),
+                        percent = COALESCE(excluded.percent, holding_shares_per.percent),
+                        unit = COALESCE(excluded.unit, holding_shares_per.unit),
+                        query_mode = excluded.query_mode
+                    """,
+                    (
+                        as_text(row.get("date")) or "",
+                        as_text(row.get("stock_id")) or "",
+                        as_text(row.get("HoldingSharesLevel")) or "",
+                        as_int(row.get("people")),
+                        as_float(row.get("percent")),
+                        as_int(row.get("unit")),
+                        query_mode,
+                    ),
+                )
+                inserted_rows += cur.rowcount
+        else:
+            ensure_stock_db_layout(conn, stock_id=history_stock_id)
+            for row in rows:
+                cur = conn.execute(
+                    """
+                    INSERT INTO holding_shares_per (
+                        date, holding_shares_level, people, percent, unit, query_mode
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(date, holding_shares_level) DO UPDATE SET
+                        people = COALESCE(excluded.people, holding_shares_per.people),
+                        percent = COALESCE(excluded.percent, holding_shares_per.percent),
+                        unit = COALESCE(excluded.unit, holding_shares_per.unit),
+                        query_mode = excluded.query_mode
+                    """,
+                    (
+                        as_text(row.get("date")) or "",
+                        as_text(row.get("HoldingSharesLevel")) or "",
+                        as_int(row.get("people")),
+                        as_float(row.get("percent")),
+                        as_int(row.get("unit")),
+                        query_mode,
+                    ),
+                )
+                inserted_rows += cur.rowcount
         conn.commit()
     finally:
         conn.close()

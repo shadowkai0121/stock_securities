@@ -16,7 +16,7 @@
 ## Storage Pattern
 
 - per-stock DBs: `data/<stock_id>.sqlite`
-- shared metadata DBs: `data/stock_info.sqlite`, `data/holding_shares_per.sqlite`
+- shared market DB: `data/market.sqlite`
 - feature cache: `data/feature_cache/<version>/<key>.parquet`
 - research specs: `research_specs/<research_id>.json`
 - append-only run outputs: `experiments/<research_id>/runs/<run_id>/`

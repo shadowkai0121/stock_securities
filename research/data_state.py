@@ -25,8 +25,7 @@ REMOTE_DATASET_IDS = {
 }
 
 SHARED_DB_FILENAMES = {
-    "stock_info": "stock_info.sqlite",
-    "holding_shares": "holding_shares_per.sqlite",
+    "market": "market.sqlite",
 }
 
 
@@ -139,9 +138,9 @@ def resolve_dataset_targets(
                 DatasetTarget(
                     dataset_name=dataset_name,
                     table=table,
-                    db_path=data_root_path / SHARED_DB_FILENAMES["stock_info"],
+                    db_path=data_root_path / SHARED_DB_FILENAMES["market"],
                     stock_id=None,
-                    scope="shared",
+                    scope="market",
                     remote_dataset=remote_dataset,
                 )
             )
@@ -153,18 +152,14 @@ def resolve_dataset_targets(
             )
 
         for stock_id in stock_ids:
-            db_path = (
-                data_root_path / SHARED_DB_FILENAMES["holding_shares"]
-                if dataset_name == "holding_shares"
-                else data_root_path / f"{stock_id}.sqlite"
-            )
+            db_path = data_root_path / f"{stock_id}.sqlite"
             targets.append(
                 DatasetTarget(
                     dataset_name=dataset_name,
                     table=table,
                     db_path=db_path,
                     stock_id=stock_id,
-                    scope="shared" if dataset_name == "holding_shares" else "stock",
+                    scope="stock",
                     remote_dataset=remote_dataset,
                 )
             )

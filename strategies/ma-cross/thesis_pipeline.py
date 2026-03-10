@@ -610,7 +610,7 @@ def run_pipeline(args: argparse.Namespace) -> int:
         print(f"[1/5] Loading universe from CSV: {universe_path}")
         industry_universe, snapshot_date = load_industry_universe_from_csv(universe_path)
     else:
-        stock_info_db = output_dir / "stock_info.sqlite"
+        stock_info_db = output_dir / "market.sqlite"
         print("[1/5] Fetching stock info snapshot candidates...")
         stock_info_result = fetch_stock_info_to_db(
             token=token,

@@ -16,7 +16,7 @@ from universe.universe_builder import TaiwanEquityUniverseBuilder
 
 
 def _create_local_dataset(root: Path) -> None:
-    conn = sqlite3.connect(root / "stock_info.sqlite")
+    conn = sqlite3.connect(root / "market.sqlite")
     conn.execute(
         "CREATE TABLE stock_info (date TEXT, stock_id TEXT, stock_name TEXT, type TEXT, industry_category TEXT)"
     )

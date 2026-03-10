@@ -124,8 +124,7 @@ class ResearchOrchestrator:
 
         start_date = cfg["start_date"]
         end_date = cfg["end_date"]
-        stock_info_db = Path(ingestion_cfg.get("stock_info_db", data_root / "stock_info.sqlite"))
-        holding_db = Path(ingestion_cfg.get("holding_shares_db", data_root / "holding_shares_per.sqlite"))
+        stock_info_db = Path(ingestion_cfg.get("stock_info_db", data_root / "market.sqlite"))
 
         # Determine missing datasets first.
         missing: list[str] = []
@@ -147,9 +146,11 @@ class ResearchOrchestrator:
                 if not self._table_has_rows(db_path, table, start_date=start_date, end_date=end_date):
                     missing.append(f"{dataset_name}:{stock_id}")
 
-        if "holding_shares" in required_datasets and stock_ids:
-            if not self._table_has_rows(holding_db, "holding_shares_per", start_date=start_date, end_date=end_date):
-                missing.append("holding_shares")
+        if "holding_shares" in required_datasets:
+            for stock_id in stock_ids:
+                db_path = data_root / f"{stock_id}.sqlite"
+                if not self._table_has_rows(db_path, "holding_shares_per", start_date=start_date, end_date=end_date):
+                    missing.append(f"holding_shares:{stock_id}")
 
         if not missing:
             logs.append("All required datasets already available locally.")
@@ -207,12 +208,16 @@ class ResearchOrchestrator:
             logs.append(f"[ingest] {dataset_name}:{stock_id} inserted={result.inserted_rows} db={result.db_path}")
 
         if "holding_shares" in [item.split(":", 1)[0] for item in missing]:
-            for stock_id in stock_ids:
+            for item in missing:
+                if not item.startswith("holding_shares:"):
+                    continue
+                stock_id = item.split(":", 1)[1]
+                db_path = data_root / f"{stock_id}.sqlite"
                 result = loader.download_holding_shares(
                     stock_id=stock_id,
                     start_date=start_date,
                     end_date=end_date,
-                    db_path=holding_db,
+                    db_path=db_path,
                 )
                 logs.append(f"[ingest] holding_shares:{stock_id} inserted={result.inserted_rows} db={result.db_path}")
 
@@ -260,8 +265,8 @@ class ResearchOrchestrator:
             required_non_null_cols = self._required_non_null_columns(quality_checks)
             primary_keys = [str(x) for x in item.get("primary_keys", []) if str(x) != "dataset_specific"]
 
-            if dataset_name in {"stock_info", "holding_shares"}:
-                db_path = data_root / ("stock_info.sqlite" if dataset_name == "stock_info" else "holding_shares_per.sqlite")
+            if dataset_name == "stock_info":
+                db_path = data_root / "market.sqlite"
                 if not db_path.exists():
                     reports.append(
                         {
@@ -549,7 +554,7 @@ class ResearchOrchestrator:
         experiments_root = Path(cfg.get("experiments_root", "experiments"))
         registry = self._resolve_registry(root_dir=experiments_root)
 
-        shared_files = [data_root / "stock_info.sqlite", data_root / "holding_shares_per.sqlite"]
+        shared_files = [data_root / "market.sqlite"]
         stock_files = [data_root / f"{stock_id}.sqlite" for stock_id in active_stock_ids]
         dataset_hash = ExperimentRegistry.dataset_fingerprint(shared_files + stock_files)
 

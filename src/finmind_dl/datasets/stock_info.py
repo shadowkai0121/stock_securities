@@ -10,18 +10,16 @@ from finmind_dl.core.convert import as_text
 from finmind_dl.core.date_utils import parse_iso_date
 from finmind_dl.core.http_client import fetch_dataset
 from finmind_dl.core.sqlite_store import open_connection, prepare_db_path
-from finmind_dl.schema import init_schema
+from finmind_dl.core.storage_layout import ensure_market_db_layout, migrate_legacy_market_files
 
-from .common import summarize_result
+from .common import default_market_db_path, summarize_result
 
 DATASET = "TaiwanStockInfo"
 TABLE = "stock_info"
 
 
 def _default_db_path(cli_path: str | None) -> Path:
-    if cli_path:
-        return Path(cli_path)
-    return Path("stock_info.sqlite")
+    return default_market_db_path(cli_path)
 
 
 def _normalize_rows(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
@@ -51,11 +49,13 @@ def run(args: Namespace, token: str) -> dict[str, Any]:
     raw_rows = fetch_dataset(DATASET, token, params)
     rows = _normalize_rows(raw_rows)
 
+    if not bool(args.replace):
+        migrate_legacy_market_files(db_path)
     prepare_db_path(db_path, replace=bool(args.replace))
     conn = open_connection(db_path)
     inserted_rows = 0
     try:
-        init_schema(conn)
+        ensure_market_db_layout(conn)
         for row in rows:
             cur = conn.execute(
                 """

@@ -65,8 +65,24 @@ class ResearchDataLoader:
         if not store.table_exists(table):
             return pd.DataFrame(columns=list(columns))
 
-        where_parts = ["stock_id = ?"]
-        params: list[Any] = [stock_id]
+        table_columns = set(store.list_columns(table))
+        has_stock_id = "stock_id" in table_columns
+
+        selected_columns: list[str] = []
+        for col in columns:
+            if col == "stock_id" and not has_stock_id:
+                continue
+            if col in table_columns:
+                selected_columns.append(col)
+
+        if not selected_columns:
+            return pd.DataFrame(columns=list(columns))
+
+        where_parts: list[str] = []
+        params: list[Any] = []
+        if has_stock_id:
+            where_parts.append("stock_id = ?")
+            params.append(stock_id)
         if date_range.start_date:
             where_parts.append("date >= ?")
             params.append(date_range.start_date)
@@ -78,13 +94,36 @@ class ResearchDataLoader:
             if extra_params:
                 params.extend(list(extra_params))
 
+        resolved_order_by: str | None = order_by
+        if order_by:
+            order_terms: list[str] = []
+            for raw_term in order_by.split(","):
+                term = raw_term.strip()
+                if not term:
+                    continue
+                base = term.split(" ", 1)[0].strip().strip('"')
+                if base == "stock_id" and not has_stock_id:
+                    continue
+                if base in table_columns:
+                    order_terms.append(term)
+            resolved_order_by = ", ".join(order_terms) if order_terms else None
+
         frame = store.read_table(
             table,
-            columns=columns,
-            where=" AND ".join(where_parts),
+            columns=selected_columns,
+            where=" AND ".join(where_parts) if where_parts else None,
             params=params,
-            order_by=order_by,
+            order_by=resolved_order_by,
         )
+        if frame.empty:
+            return pd.DataFrame(columns=list(columns))
+
+        if not has_stock_id and "stock_id" in columns:
+            frame["stock_id"] = stock_id
+        for col in columns:
+            if col not in frame.columns:
+                frame[col] = pd.NA
+        frame = frame[list(columns)]
         return frame
 
     def _load_multi_stock(
@@ -289,39 +328,26 @@ class ResearchDataLoader:
         end_date: str | None = None,
         db_path: str | Path | None = None,
     ) -> pd.DataFrame:
-        """Load holding-shares distribution from a shared local SQLite file."""
+        """Load holding-shares distribution from per-stock local SQLite files."""
 
-        path = self._resolve_shared_db("holding_shares_per.sqlite", db_path)
-        if not path.exists():
-            return pd.DataFrame(
-                columns=["date", "stock_id", "holding_shares_level", "people", "percent", "unit", "query_mode"]
-            )
+        columns = ["date", "stock_id", "holding_shares_level", "people", "percent", "unit", "query_mode"]
+        target_ids = [str(item).strip() for item in (stock_ids or []) if str(item).strip()]
+        if not target_ids:
+            target_ids = self.available_stock_ids()
 
-        store = SQLiteStore(path)
-        if not store.table_exists("holding_shares_per"):
-            return pd.DataFrame(
-                columns=["date", "stock_id", "holding_shares_level", "people", "percent", "unit", "query_mode"]
-            )
+        if db_path is not None and len(target_ids) > 1:
+            raise ValueError("db_path override for holding_shares supports only one stock_id.")
 
-        where_parts: list[str] = []
-        params: list[Any] = []
-        if stock_ids:
-            placeholders = ", ".join("?" for _ in stock_ids)
-            where_parts.append(f"stock_id IN ({placeholders})")
-            params.extend(list(stock_ids))
-        if start_date:
-            where_parts.append("date >= ?")
-            params.append(start_date)
-        if end_date:
-            where_parts.append("date <= ?")
-            params.append(end_date)
+        db_map = None
+        if db_path is not None and target_ids:
+            db_map = {target_ids[0]: Path(db_path)}
 
-        where = " AND ".join(where_parts) if where_parts else None
-        frame = store.read_table(
-            "holding_shares_per",
-            where=where,
-            params=params,
-            order_by="date, stock_id, holding_shares_level",
+        frame = self._load_multi_stock(
+            stock_ids=target_ids,
+            table="holding_shares_per",
+            columns=columns,
+            date_range=DataRange(start_date, end_date),
+            db_path_map=db_map,
         )
         if frame.empty:
             return frame
@@ -337,9 +363,9 @@ class ResearchDataLoader:
         end_date: str | None = None,
         db_path: str | Path | None = None,
     ) -> pd.DataFrame:
-        """Load stock metadata from local stock_info SQLite."""
+        """Load stock metadata from local market SQLite."""
 
-        path = self._resolve_shared_db("stock_info.sqlite", db_path)
+        path = self._resolve_shared_db("market.sqlite", db_path)
         if not path.exists():
             return pd.DataFrame(columns=["date", "stock_id", "stock_name", "type", "industry_category"])
 

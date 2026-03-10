@@ -81,7 +81,7 @@ class OrchestratorSmokeTests(unittest.TestCase):
             experiments_root = root / "experiments"
             data_root.mkdir(parents=True, exist_ok=True)
 
-            _create_stock_info(data_root / "stock_info.sqlite")
+            _create_stock_info(data_root / "market.sqlite")
             _create_price_adj(data_root / "2330.sqlite", "2330")
 
             cfg = {

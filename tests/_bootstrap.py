@@ -5,7 +5,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-if str(SRC) not in sys.path:
-    sys.path.append(str(SRC))
+for path in (str(ROOT), str(SRC)):
+    if path in sys.path:
+        sys.path.remove(path)
+sys.path.insert(0, str(ROOT))
+sys.path.insert(1, str(SRC))

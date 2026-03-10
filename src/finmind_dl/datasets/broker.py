@@ -10,7 +10,7 @@ from finmind_dl.core.convert import as_float
 from finmind_dl.core.date_utils import ensure_date_range, parse_iso_date
 from finmind_dl.core.http_client import fetch_trading_daily_report
 from finmind_dl.core.sqlite_store import open_connection, prepare_db_path
-from finmind_dl.schema import init_schema
+from finmind_dl.core.storage_layout import ensure_stock_db_layout
 
 from .common import default_stock_db_path, fetch_trading_dates, summarize_result
 
@@ -35,13 +35,13 @@ def run(args: Namespace, token: str) -> dict[str, Any]:
     inserted_rows = 0
     touched_brokers: set[str] = set()
     try:
-        init_schema(conn)
+        ensure_stock_db_layout(conn, stock_id=stock_id)
 
         insert_sql = """
             INSERT INTO broker_trades (
-                date, stock_id, broker_id, broker_name, price, buy, sell, is_placeholder
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(date, stock_id, broker_id, broker_name, price, buy, sell, is_placeholder)
+                date, broker_id, broker_name, price, buy, sell, is_placeholder
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(date, broker_id, broker_name, price, buy, sell, is_placeholder)
             DO NOTHING
         """
 
@@ -59,12 +59,11 @@ def run(args: Namespace, token: str) -> dict[str, Any]:
                     """
                     DELETE FROM broker_trades
                     WHERE date = ?
-                      AND stock_id = ?
                       AND broker_id = ?
                       AND broker_name = ?
                       AND is_placeholder = 1
                     """,
-                    (one_date, stock_id, NO_DATA_BROKER_ID, NO_DATA_BROKER_NAME),
+                    (one_date, NO_DATA_BROKER_ID, NO_DATA_BROKER_NAME),
                 )
 
                 for row in rows:
@@ -77,7 +76,6 @@ def run(args: Namespace, token: str) -> dict[str, Any]:
                         insert_sql,
                         (
                             str(row.get("date", one_date)),
-                            str(row.get("stock_id", stock_id)),
                             broker_id,
                             broker_name,
                             as_float(row.get("price")),
@@ -94,7 +92,6 @@ def run(args: Namespace, token: str) -> dict[str, Any]:
                     insert_sql,
                     (
                         one_date,
-                        stock_id,
                         NO_DATA_BROKER_ID,
                         NO_DATA_BROKER_NAME,
                         None,

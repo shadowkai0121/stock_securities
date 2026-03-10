@@ -9,7 +9,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from finmind_dl.schema import init_schema
+from finmind_dl.schema import init_meta_schema
 
 
 def new_run_id() -> str:
@@ -39,7 +39,7 @@ def write_meta_run(
     status: str,
     error_message: str | None,
 ) -> None:
-    init_schema(conn)
+    init_meta_schema(conn)
     conn.execute(
         """
         INSERT INTO meta_runs (

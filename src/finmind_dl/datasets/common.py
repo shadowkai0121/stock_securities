@@ -17,6 +17,12 @@ def default_stock_db_path(stock_id: str, cli_path: str | None) -> Path:
     return Path(f"{stock_id}.sqlite")
 
 
+def default_market_db_path(cli_path: str | None) -> Path:
+    if cli_path:
+        return Path(cli_path)
+    return Path("market.sqlite")
+
+
 def fetch_trading_dates(token: str, start_date: str, end_date: str) -> list[str]:
     rows = fetch_dataset(
         TRADING_DATE_DATASET,

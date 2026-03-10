@@ -78,24 +78,41 @@ def load_price_adj_daily(
     if not db_path.exists():
         raise FileNotFoundError(f"SQLite DB not found: {db_path}")
 
-    where_clauses = ["stock_id = ?"]
-    params: list[object] = [stock_id]
-    if start_date:
-        where_clauses.append("date >= ?")
-        params.append(start_date)
-    if end_date:
-        where_clauses.append("date <= ?")
-        params.append(end_date)
-
-    sql = f"""
-    SELECT date, stock_id, close, is_placeholder
-    FROM "{table}"
-    WHERE {" AND ".join(where_clauses)}
-    ORDER BY date
-    """
+    where_clauses: list[str] = []
+    params: list[object] = []
+    select_cols = ["date", "close", "is_placeholder"]
+    has_stock_id = False
 
     with sqlite3.connect(db_path) as conn:
+        table_cols = {
+            str(row[1])
+            for row in conn.execute(f'PRAGMA table_info("{table}")').fetchall()
+        }
+        if not table_cols:
+            raise ValueError(f"Table not found: {table} in {db_path}")
+
+        has_stock_id = "stock_id" in table_cols
+        if has_stock_id:
+            select_cols.insert(1, "stock_id")
+            where_clauses.append("stock_id = ?")
+            params.append(stock_id)
+        if start_date:
+            where_clauses.append("date >= ?")
+            params.append(start_date)
+        if end_date:
+            where_clauses.append("date <= ?")
+            params.append(end_date)
+
+        sql = f"""
+        SELECT {", ".join(select_cols)}
+        FROM "{table}"
+        {"WHERE " + " AND ".join(where_clauses) if where_clauses else ""}
+        ORDER BY date
+        """
         df = pd.read_sql_query(sql, conn, params=params)
+
+    if not has_stock_id:
+        df["stock_id"] = stock_id
 
     if df.empty:
         raise ValueError(

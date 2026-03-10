@@ -231,7 +231,7 @@ def _fallback_context(args: argparse.Namespace) -> dict[str, Any]:
     if command == "holding-shares":
         all_market_date = getattr(args, "all_market_date", None)
         if all_market_date:
-            db_path = Path(getattr(args, "db_path")) if getattr(args, "db_path", None) else Path("holding_shares_per.sqlite")
+            db_path = Path(getattr(args, "db_path")) if getattr(args, "db_path", None) else Path("market.sqlite")
             return {
                 "dataset": holding_shares.DATASET,
                 "stock_id": "__ALL__",
@@ -257,7 +257,7 @@ def _fallback_context(args: argparse.Namespace) -> dict[str, Any]:
             "query_mode": "all_market_snapshot",
             "start_date": getattr(args, "start_date", None),
             "end_date": None,
-            "db_path": Path(getattr(args, "db_path")) if getattr(args, "db_path", None) else Path("stock_info.sqlite"),
+            "db_path": Path(getattr(args, "db_path")) if getattr(args, "db_path", None) else Path("market.sqlite"),
         }
 
     return {

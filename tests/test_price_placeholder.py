@@ -39,7 +39,7 @@ class PricePlaceholderTests(unittest.TestCase):
             conn = sqlite3.connect(db_path)
             try:
                 row = conn.execute(
-                    "SELECT is_placeholder, open FROM price_daily WHERE date = '2026-03-01' AND stock_id='2330'"
+                    "SELECT is_placeholder, open FROM price_daily WHERE date = '2026-03-01'"
                 ).fetchone()
             finally:
                 conn.close()
@@ -77,7 +77,7 @@ class PricePlaceholderTests(unittest.TestCase):
             conn = sqlite3.connect(db_path)
             try:
                 row = conn.execute(
-                    "SELECT is_placeholder, open, close FROM price_daily WHERE date = '2026-03-01' AND stock_id='2330'"
+                    "SELECT is_placeholder, open, close FROM price_daily WHERE date = '2026-03-01'"
                 ).fetchone()
             finally:
                 conn.close()

@@ -135,19 +135,33 @@ def load_price_data(
     if not db_path.exists():
         raise ValueError(f"DB not found: {db_path}")
 
-    sql = (
-        f'SELECT date, stock_id, open, close, is_placeholder FROM "{table}" '
-        "WHERE stock_id = ? AND date BETWEEN ? AND ? ORDER BY date"
-    )
-
     try:
         conn = sqlite3.connect(db_path)
         try:
-            df = pd.read_sql_query(sql, conn, params=[stock_id, start_date, end_date])
+            table_cols = {
+                str(row[1])
+                for row in conn.execute(f'PRAGMA table_info("{table}")').fetchall()
+            }
+            if not table_cols:
+                raise ValueError(f"Table not found: {table}")
+
+            has_stock_id = "stock_id" in table_cols
+            sql = (
+                f'SELECT {"date, stock_id, open, close, is_placeholder" if has_stock_id else "date, open, close, is_placeholder"} '
+                f'FROM "{table}" '
+                f'WHERE {"stock_id = ? AND " if has_stock_id else ""}date BETWEEN ? AND ? ORDER BY date'
+            )
+            params: list[str] = [start_date, end_date]
+            if has_stock_id:
+                params = [stock_id, start_date, end_date]
+            df = pd.read_sql_query(sql, conn, params=params)
         finally:
             conn.close()
     except Exception as exc:
         raise ValueError(f"Failed to read table '{table}' from '{db_path}': {exc}") from exc
+
+    if "stock_id" not in df.columns:
+        df["stock_id"] = stock_id
 
     if df.empty:
         raise ValueError(

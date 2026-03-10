@@ -78,7 +78,7 @@ class UniverseBuilderTests(unittest.TestCase):
     def test_universe_filters_etf_and_short_history(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_name:
             root = Path(tmp_name)
-            _write_stock_info(root / "stock_info.sqlite")
+            _write_stock_info(root / "market.sqlite")
             _write_price(root / "2330.sqlite", "2330", 90)
             _write_price(root / "0050.sqlite", "0050", 90)
             _write_price(root / "1101.sqlite", "1101", 20)
