@@ -1,0 +1,20 @@
+{
+  "status": "pending_data",
+  "run_timestamp": "2026-03-10 03:30:06 UTC",
+  "config": {
+    "data_dir": "C:\\Users\\asus\\Documents\\Test\\chips\\data",
+    "output_dir": "C:\\Users\\asus\\Documents\\Test\\chips\\strategies\\k-means\\outputs",
+    "report_path": "C:\\Users\\asus\\Documents\\Test\\chips\\strategies\\k-means\\report.md",
+    "table_name": "price_adj_daily",
+    "min_k": 2,
+    "max_k": 10,
+    "min_observations": 60,
+    "random_state": 42
+  },
+  "database_files_scanned": 1,
+  "stocks_with_valid_prices": 0,
+  "stocks_clustered": 0,
+  "best_k": null,
+  "best_silhouette_score": null,
+  "figure_path": null
+}
