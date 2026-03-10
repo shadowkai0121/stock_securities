@@ -8,7 +8,22 @@ version = "0.1.0"
 description = "Unified FinMind downloader CLI"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "scikit-learn",
+    "scipy",
+    "statsmodels",
+    "tqdm",
+    "pyarrow",
+    "nbformat",
+    "nbclient",
+    "nbconvert",
+    "python-dotenv",
+    "networkx",
+    "hmmlearn",
+]
 
 [project.scripts]
 finmind-dl = "finmind_dl.cli:main"

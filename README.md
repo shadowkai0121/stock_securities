@@ -1,8 +1,48 @@
-# finmind-dl
+# finmind-dl + Quant Research Platform
 
 finmind api doc: `https://finmind.github.io/`
 
-Unified FinMind downloader CLI for Taiwan stock datasets.
+This repository now combines:
+
+- `finmind-dl`: the canonical data ingestion CLI/tooling layer
+- a local-data-first quantitative research platform with orchestrated experiment runs
+
+`finmind-dl` remains a first-class component and is the official ingestion interface.
+
+## Data Architecture
+
+Canonical flow:
+
+`FinMind API -> finmind-dl -> SQLite -> research data loader -> universe -> feature store -> strategy -> backtest -> statistics -> experiment registry -> report`
+
+Research code should read local persisted datasets only, not remote APIs.
+
+## New Platform Entrypoints
+
+- Python ingestion wrapper: `data/loaders/finmind_loader.py`
+- Research orchestrator: `research/orchestrator.py`
+- Experiment registry: `experiments/registry.py`
+- Example end-to-end run: `experiments/example_ma_cross/run_experiment.py`
+
+## Quickstart (Platform)
+
+```bash
+make install
+make download-sample-data
+make run-example-experiment
+```
+
+Or run directly:
+
+```bash
+python experiments/example_ma_cross/run_experiment.py --config experiments/example_ma_cross/config.json
+```
+
+If local data is missing, set token first:
+
+```bash
+set FINMIND_SPONSOR_API_KEY=your_token_here
+```
 
 ## Install
 
@@ -173,3 +213,11 @@ python strategies/ma-cross/thesis_pipeline.py
 This will:
 - download `price_adj_daily` into `data/<stock_id>.sqlite`
 - generate thesis outputs under `strategies/ma-cross/outputs/thesis/`
+
+## Additional Documentation
+
+- system overview: `docs/architecture/system_overview.md`
+- data flow: `docs/architecture/data_flow.md`
+- research pipeline: `docs/research-workflow/research_pipeline.md`
+- experiment lifecycle: `docs/research-workflow/experiment_lifecycle.md`
+- data catalog docs: `docs/data-catalog/`

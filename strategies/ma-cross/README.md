@@ -108,3 +108,14 @@ python -m unittest discover -s strategies/ma-cross -p "test_backtest.py"
 - `THESIS.md`
 - `THESIS_APPENDIX.md`
 - `FIGURE_TABLE_SPECS.md`
+
+## Integration With New Research Pipeline
+
+This strategy is now integrated into the standardized research stack via:
+
+- `research/strategies/ma_cross_adapter.py`
+
+The adapter preserves existing MA-cross signal behavior while making it runnable through:
+
+- `research/orchestrator.py`
+- `experiments/example_ma_cross/run_experiment.py`

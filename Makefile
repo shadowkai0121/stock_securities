@@ -1,0 +1,18 @@
+.PHONY: install test lint download-sample-data run-example-experiment
+
+install:
+	python -m pip install --upgrade pip
+	python -m pip install -r requirements.txt
+	python -m pip install -e .
+
+test:
+	python -m unittest discover -s tests -p "test_*.py"
+
+lint:
+	python -m compileall src data research universe features experiments tests
+
+download-sample-data:
+	python scripts/download_sample_data.py
+
+run-example-experiment:
+	python experiments/example_ma_cross/run_experiment.py --config experiments/example_ma_cross/config.json

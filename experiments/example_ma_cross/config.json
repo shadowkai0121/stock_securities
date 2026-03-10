@@ -1,0 +1,61 @@
+{
+  "experiment_id": "example_ma_cross",
+  "start_date": "2024-01-01",
+  "end_date": "2025-12-31",
+  "data_root": "data",
+  "experiments_root": "experiments",
+  "stock_ids": [
+    "2330",
+    "2317",
+    "2454"
+  ],
+  "required_datasets": [
+    "stock_info",
+    "price_adj"
+  ],
+  "ingestion": {
+    "auto_ingest_missing": true,
+    "stock_info_start_date": "2020-01-01"
+  },
+  "universe": {
+    "exclude_etf": true,
+    "exclude_warrant": true,
+    "min_history_days": 120,
+    "inactive_lookback_days": 60,
+    "min_liquidity": null,
+    "adjusted_price": true
+  },
+  "features": {
+    "ma_windows": [5, 20, 60],
+    "vol_windows": [20, 60],
+    "use_margin": false,
+    "use_broker": false,
+    "use_holding_shares": false
+  },
+  "strategy": {
+    "name": "ma_crossover",
+    "short_window": 20,
+    "long_window": 60,
+    "use_adjusted_price": true,
+    "use_legacy_impl": true
+  },
+  "backtest": {
+    "transaction_cost_bps": 10.0,
+    "slippage_bps": 2.0,
+    "lag_positions": 1,
+    "trading_days_per_year": 252
+  },
+  "statistics": {
+    "newey_west_lags": null,
+    "bootstrap_samples": 2000,
+    "seed": 42,
+    "walk_forward_train_window": 126,
+    "walk_forward_test_window": 63,
+    "walk_forward_step": 63,
+    "walk_forward_expanding": false,
+    "train_ratio": 0.6,
+    "valid_ratio": 0.2,
+    "rolling_window": 20,
+    "expanding_min_periods": 20
+  }
+}

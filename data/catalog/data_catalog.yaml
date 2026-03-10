@@ -1,0 +1,101 @@
+{
+  "catalog_version": "1.0",
+  "datasets": [
+    {
+      "dataset_name": "price",
+      "source": "FinMind TaiwanStockPrice",
+      "ingestion_command": "finmind-dl price --stock-id <stock_id> --start-date <YYYY-MM-DD> --end-date <YYYY-MM-DD> --db-path <path>",
+      "storage_table": "price_daily",
+      "primary_keys": ["date", "stock_id"],
+      "grain": "stock_id x date",
+      "frequency": "daily",
+      "description": "Raw daily OHLCV and turnover fields.",
+      "required_for": ["backtest", "feature_engineering", "universe_liquidity"],
+      "quality_checks": ["table_exists", "row_count_positive", "primary_key_unique", "date_not_null", "stock_id_not_null"]
+    },
+    {
+      "dataset_name": "price_adj",
+      "source": "FinMind TaiwanStockPriceAdj",
+      "ingestion_command": "finmind-dl price-adj --stock-id <stock_id> --start-date <YYYY-MM-DD> --end-date <YYYY-MM-DD> --db-path <path>",
+      "storage_table": "price_adj_daily",
+      "primary_keys": ["date", "stock_id"],
+      "grain": "stock_id x date",
+      "frequency": "daily",
+      "description": "Adjusted daily OHLCV and turnover fields.",
+      "required_for": ["strategy_signal", "backtest", "returns"],
+      "quality_checks": ["table_exists", "row_count_positive", "primary_key_unique", "date_not_null", "stock_id_not_null"]
+    },
+    {
+      "dataset_name": "margin",
+      "source": "FinMind TaiwanStockMarginPurchaseShortSale",
+      "ingestion_command": "finmind-dl margin --stock-id <stock_id> --start-date <YYYY-MM-DD> --end-date <YYYY-MM-DD> --db-path <path>",
+      "storage_table": "margin_daily",
+      "primary_keys": ["date", "stock_id"],
+      "grain": "stock_id x date",
+      "frequency": "daily",
+      "description": "Margin purchase and short-sale balance/activity fields.",
+      "required_for": ["chip_features", "leverage_features"],
+      "quality_checks": ["table_exists", "row_count_positive", "primary_key_unique", "date_not_null", "stock_id_not_null"]
+    },
+    {
+      "dataset_name": "broker",
+      "source": "FinMind TaiwanStockTradingDailyReport",
+      "ingestion_command": "finmind-dl broker --stock-id <stock_id> --start-date <YYYY-MM-DD> --end-date <YYYY-MM-DD> --db-path <path>",
+      "storage_table": "broker_trades",
+      "primary_keys": ["date", "stock_id", "broker_id", "broker_name", "price", "buy", "sell", "is_placeholder"],
+      "grain": "stock_id x date x broker",
+      "frequency": "daily",
+      "description": "Broker-level daily buy/sell report per stock.",
+      "required_for": ["broker_flow_features", "microstructure_research"],
+      "quality_checks": ["table_exists", "row_count_positive", "date_not_null", "stock_id_not_null"]
+    },
+    {
+      "dataset_name": "holding_shares",
+      "source": "FinMind TaiwanStockHoldingSharesPer",
+      "ingestion_command": "finmind-dl holding-shares --stock-id <stock_id> --start-date <YYYY-MM-DD> --end-date <YYYY-MM-DD> --db-path <path>",
+      "storage_table": "holding_shares_per",
+      "primary_keys": ["date", "stock_id", "holding_shares_level"],
+      "grain": "stock_id x date x holding_bucket",
+      "frequency": "daily",
+      "description": "Shareholder holding distribution by level bucket.",
+      "required_for": ["ownership_concentration_features"],
+      "quality_checks": ["table_exists", "row_count_positive", "primary_key_unique", "date_not_null", "stock_id_not_null"]
+    },
+    {
+      "dataset_name": "stock_info",
+      "source": "FinMind TaiwanStockInfo",
+      "ingestion_command": "finmind-dl stock-info --start-date <YYYY-MM-DD> --db-path <path>",
+      "storage_table": "stock_info",
+      "primary_keys": ["date", "stock_id", "stock_name", "type", "industry_category"],
+      "grain": "stock_id x snapshot_date",
+      "frequency": "irregular_snapshot",
+      "description": "Market-wide stock metadata including type and industry mapping.",
+      "required_for": ["universe_builder", "metadata_enrichment"],
+      "quality_checks": ["table_exists", "row_count_positive", "stock_id_not_null"]
+    },
+    {
+      "dataset_name": "warrant",
+      "source": "FinMind TaiwanStockInfoWithWarrantSummary",
+      "ingestion_command": "finmind-dl warrant --stock-id <stock_id> --start-date <YYYY-MM-DD> --db-path <path>",
+      "storage_table": "warrant_summary",
+      "primary_keys": ["target_stock_id", "warrant_stock_id", "date"],
+      "grain": "target_stock_id x warrant_id x date",
+      "frequency": "daily",
+      "description": "Warrant summary for a target stock.",
+      "required_for": ["warrant_filtering", "derivatives_overlay"],
+      "quality_checks": ["table_exists", "row_count_positive", "date_not_null"]
+    },
+    {
+      "dataset_name": "daily_bundle",
+      "source": "FinMind multi-dataset bundle",
+      "ingestion_command": "finmind-dl daily --stock-id <stock_id> --start-date <YYYY-MM-DD> --end-date <YYYY-MM-DD> --db-path <path>",
+      "storage_table": "bundle: price_daily, price_adj_daily, margin_daily, broker_trades",
+      "primary_keys": ["dataset_specific"],
+      "grain": "stock_id x date",
+      "frequency": "daily",
+      "description": "Convenience bundle ingestion for multiple daily datasets.",
+      "required_for": ["bootstrap_local_dataset"],
+      "quality_checks": ["tables_exist", "row_count_positive"]
+    }
+  ]
+}
