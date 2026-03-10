@@ -2,6 +2,7 @@ pandas
 numpy
 matplotlib
 scikit-learn
+scipy
 statsmodels
 tqdm
 pyarrow
@@ -9,3 +10,5 @@ nbformat
 nbclient
 nbconvert
 python-dotenv
+networkx
+hmmlearn
