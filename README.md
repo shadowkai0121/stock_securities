@@ -7,6 +7,7 @@ This repository now combines:
 - `finmind-dl`: the canonical data ingestion CLI/tooling layer
 - a local-data-first quantitative research platform with orchestrated experiment runs
 - an append-only `research spec + run` rerun system for repeatable studies
+- empirical inference + paper artifact generation modules for academic outputs
 
 `finmind-dl` remains a first-class component and is the official ingestion interface.
 
@@ -14,7 +15,7 @@ This repository now combines:
 
 Canonical flow:
 
-`FinMind API -> finmind-dl -> SQLite -> research data loader -> universe -> feature store -> strategy -> backtest -> statistics -> experiment run registry -> report`
+`FinMind API -> finmind-dl -> SQLite -> research data loader -> universe -> feature store -> strategy -> backtest -> inference/statistics -> experiment run registry -> paper outputs`
 
 Research code should read local persisted datasets only, not remote APIs.
 
@@ -44,6 +45,8 @@ This keeps prior runs immutable while making reruns auditable and comparable.
 - Research orchestrator: `research/orchestrator.py`
 - Research rerun runner: `research/run.py`
 - Research run comparison CLI: `research/compare_runs.py`
+- Inference comparison CLI: `research/compare_inference.py`
+- Paper artifact generator: `research/paper_outputs/generate.py`
 - Experiment registry: `experiments/registry.py`
 - Example end-to-end run: `experiments/example_ma_cross/run_experiment.py`
 - Example research spec: `research_specs/ma_cross_example_v1.json`
@@ -71,6 +74,18 @@ Compare runs:
 
 ```bash
 python -m research.compare_runs --research-id ma_cross_example_v1
+```
+
+Generate paper artifacts:
+
+```bash
+python -m research.paper_outputs.generate --experiment <run_id> --paper <paper_id>
+```
+
+Compare inference outputs:
+
+```bash
+python -m research.compare_inference --research-id ma_cross_example_v1 --base-run <run_a> --target-run <run_b>
 ```
 
 If local data is missing, set token first:
@@ -261,3 +276,4 @@ This will:
 - research pipeline: `docs/research-workflow/research_pipeline.md`
 - experiment lifecycle: `docs/research-workflow/experiment_lifecycle.md`
 - data catalog docs: `docs/data-catalog/`
+- papers workspace: `papers/README.md`

@@ -8,9 +8,10 @@
 
 ## Research Agent
 
-- Builds universe definitions and feature pipelines from local data.
-- Designs and runs strategy experiments with explicit assumptions.
-- Produces reproducible configs and parameter tracking.
+- Proposes and versions research specs under `research_specs/`.
+- Generates/extends local feature definitions compatible with the existing feature store.
+- Runs experiments through append-only run workflows.
+- Produces inference outputs, paper tables/figures, and reproducibility artifacts.
 
 ## Backtest Agent
 
@@ -20,12 +21,13 @@
 
 ## Reviewer Agent
 
-- Reviews methodology, statistical validity, and implementation risks.
-- Checks reproducibility and experiment metadata integrity.
-- Flags potential look-ahead bias, leakage, and survivorship issues.
+- Detects look-ahead bias risks in feature, signal, and execution logic.
+- Detects survivorship bias risks in universe definition and data coverage assumptions.
+- Detects data leakage across train/validation/test and event windows.
+- Reviews statistical validity and reproducibility integrity.
 
-## Reproduction Agent
+## Replication Agent
 
-- Re-runs historical experiments from saved configs/artifacts.
-- Confirms metrics and outputs are reproducible.
-- Documents drift causes when outputs diverge.
+- Re-runs experiments from saved specs/run IDs without mutating historical outputs.
+- Validates that inference, tables, and figures can be regenerated.
+- Compares replicated outputs against prior runs and documents drift causes.

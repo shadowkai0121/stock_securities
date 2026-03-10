@@ -53,6 +53,36 @@ DEFAULT_REPORT_DEFINITION = {
     "write_universe_csv": True,
     "write_features_csv": False,
 }
+DEFAULT_ROBUSTNESS_DEFINITION: dict[str, Any] = {}
+
+
+def _resolve_companion_docs(source_path: str | Path | None, research_id: str) -> dict[str, str]:
+    """Resolve optional hypothesis/design documents near the spec file."""
+
+    if source_path is None:
+        return {}
+    spec_path = Path(source_path)
+    if not spec_path.exists():
+        return {}
+
+    parent = spec_path.parent
+    stem = spec_path.stem
+    resolved: dict[str, str] = {}
+    mapping = {
+        "hypothesis_path": [parent / f"{stem}.hypothesis.md"],
+        "design_path": [parent / f"{stem}.design.md"],
+    }
+    # Backward-compatible fallback when spec name and research_id differ.
+    if research_id and stem != research_id:
+        mapping["hypothesis_path"].append(parent / f"{research_id}.hypothesis.md")
+        mapping["design_path"].append(parent / f"{research_id}.design.md")
+
+    for key, candidates in mapping.items():
+        for path in candidates:
+            if path.exists():
+                resolved[key] = str(path)
+                break
+    return resolved
 
 
 class SpecValidationError(ValueError):
@@ -114,6 +144,8 @@ class ResearchSpec:
     evaluation_definition: dict[str, Any]
     rerun_mode: str
     report_definition: dict[str, Any] = field(default_factory=dict)
+    robustness_definition: dict[str, Any] = field(default_factory=dict)
+    companion_docs: dict[str, Any] = field(default_factory=dict)
     source_path: str | None = None
 
     @classmethod
@@ -183,11 +215,19 @@ class ResearchSpec:
             DEFAULT_REPORT_DEFINITION,
             _as_mapping(payload.get("report_definition"), field_name="report_definition", required=False),
         )
+        robustness_definition = _merge_defaults(
+            DEFAULT_ROBUSTNESS_DEFINITION,
+            _as_mapping(payload.get("robustness"), field_name="robustness", required=False),
+        )
         strategy_definition = _as_mapping(payload.get("strategy_definition"), field_name="strategy_definition")
 
         required_datasets = tuple(
             _as_string_list(payload.get("required_datasets"), field_name="required_datasets")
         )
+        companion_docs = _as_mapping(payload.get("companion_docs"), field_name="companion_docs", required=False)
+        if source_path is not None:
+            for key, value in _resolve_companion_docs(source_path, research_id).items():
+                companion_docs.setdefault(key, value)
 
         return cls(
             research_id=research_id,
@@ -204,6 +244,8 @@ class ResearchSpec:
             evaluation_definition=evaluation_definition,
             rerun_mode=rerun_mode,
             report_definition=report_definition,
+            robustness_definition=robustness_definition,
+            companion_docs=companion_docs,
             source_path=str(Path(source_path)) if source_path is not None else None,
         )
 
@@ -225,6 +267,8 @@ class ResearchSpec:
             "evaluation_definition": copy.deepcopy(self.evaluation_definition),
             "rerun_mode": self.rerun_mode,
             "report_definition": copy.deepcopy(self.report_definition),
+            "robustness": copy.deepcopy(self.robustness_definition),
+            "companion_docs": copy.deepcopy(self.companion_docs),
             "source_path": self.source_path,
         }
 

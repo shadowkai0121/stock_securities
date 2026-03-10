@@ -1,48 +1,58 @@
 # Research Pipeline
 
-## Standard Pipeline
+## Full Empirical Lifecycle
 
-1. Resolve configuration.
-2. Resolve `data_as_of` for the run.
-3. Validate dataset availability.
-4. Ingest missing or stale local data through `finmind-dl` wrappers.
-5. Construct tradable universe using only local data up to `data_as_of`.
-6. Generate or load cached features.
-7. Run strategy signal model.
-8. Run shared backtest engine.
-9. Run statistical validation.
-10. Generate report artifacts.
-11. Register append-only run metadata and outputs.
+1. Define a stable research spec (`research_specs/<research_id>.json`).
+2. Resolve `data_as_of` and validate local dataset coverage.
+3. Ingest missing/stale data via `finmind-dl` only.
+4. Build universe and feature panel from local persistence.
+5. Run strategy and backtest.
+6. Compute statistical validation and inference panel artifacts.
+7. Optionally run robustness scenario grid.
+8. Register append-only run outputs under `experiments/<research_id>/runs/<run_id>/`.
+9. Generate paper artifacts under `papers/<paper_id>/`.
+10. Persist reproducibility records (spec, run IDs, data manifest, environment info).
 
 ## Rerun Entry Point
-
-Preferred rerun command:
 
 ```bash
 python -m research.run --spec research_specs/ma_cross_example_v1.json --data-as-of 2026-03-31
 ```
 
-The runner writes:
+Core run outputs:
 
 - `resolved_spec.json`
 - `data_manifest.json`
 - `metrics.json`
-- `report.md`
 - `artifacts.json`
+- `backtest_timeseries.csv`
+- `inference_panel.csv` (when available)
+- `report.md`
 - `run.log`
+- optional `robustness/robustness_results.json`
 
-## Replaceable Interfaces
+## Paper Artifact Entry Point
 
-`research/pipeline.py` defines standardized components:
+```bash
+python -m research.paper_outputs.generate --experiment <run_id> --paper <paper_id>
+```
 
-- DataLoader
-- UniverseBuilder
-- FeaturePipeline
-- SignalModel
-- PortfolioConstructor
-- CostModel
-- BacktestEngine
-- Evaluator
-- ReportGenerator
+Paper workspace outputs:
 
-These interfaces allow new research modules to plug in without rewriting the full workflow.
+- `papers/<paper_id>/tables/` (CSV/Markdown/LaTeX)
+- `papers/<paper_id>/figures/` (PNG)
+- `papers/<paper_id>/appendix/` (appendix tables)
+- `papers/<paper_id>/reproducibility/` (`research_spec.json`, `experiment_run_ids.txt`, `data_manifest.json`, `environment_info.json`)
+
+## Inference Comparison
+
+```bash
+python -m research.compare_inference --research-id <research_id> --base-run <run_a> --target-run <run_b>
+```
+
+This compares:
+
+- coefficient stability
+- t-stat stability
+- significance persistence
+- portfolio spread changes

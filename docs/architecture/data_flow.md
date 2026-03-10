@@ -2,7 +2,7 @@
 
 Canonical data movement is intentionally one-directional:
 
-`FinMind API -> finmind-dl -> SQLite -> research loader -> universe -> feature store -> strategy -> backtest -> statistics -> experiment run registry -> report`
+`FinMind API -> finmind-dl -> SQLite -> research loader -> universe -> feature store -> strategy -> backtest -> inference/statistics -> run registry -> paper outputs`
 
 ## Principles
 
@@ -21,3 +21,5 @@ Canonical data movement is intentionally one-directional:
 7. Strategy and backtest run without any remote data access.
 8. Rerun outputs are registered under `experiments/<research_id>/runs/<run_id>/`.
 9. `latest.json` and `run_index.json` provide lightweight filesystem pointers for comparison tooling.
+10. Inference outputs can be compared across runs (`research.compare_inference`).
+11. Paper tables/figures/reproducibility artifacts are generated under `papers/<paper_id>/`.

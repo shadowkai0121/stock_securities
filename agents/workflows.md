@@ -16,8 +16,9 @@
 2. Freeze universe, features, and parameter definitions.
 3. Ensure historical dataset snapshot availability.
 4. Execute orchestrated pipeline.
-5. Compare output tables/figures with paper targets.
-6. Document deviations in `memory-bank/paper-notes/`.
+5. Generate inference and paper artifacts with `python -m research.paper_outputs.generate`.
+6. Compare output tables/figures with paper targets.
+7. Document deviations in `memory-bank/paper-notes/`.
 
 ## Dataset Extension
 
@@ -34,3 +35,11 @@
 3. Re-run from same config after fixing root cause.
 4. Record lessons in `memory-bank/experiment-lessons/`.
 5. Do not overwrite the original failed experiment folder.
+
+## Inference Stability Review
+
+1. Select two successful runs of the same `research_id`.
+2. Run `python -m research.compare_inference`.
+3. Inspect coefficient and t-stat stability.
+4. Check significance persistence and long-short spread drift.
+5. Log interpretation decisions in `memory-bank/decision-log/`.

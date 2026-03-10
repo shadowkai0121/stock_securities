@@ -1,4 +1,4 @@
-.PHONY: install test lint download-sample-data run-example-experiment run-example-research rerun-spec compare-example-runs
+.PHONY: install test lint download-sample-data run-example-experiment run-example-research rerun-spec compare-example-runs compare-example-inference generate-paper
 
 install:
 	python -m pip install --upgrade pip
@@ -25,3 +25,9 @@ rerun-spec:
 
 compare-example-runs:
 	python -m research.compare_runs --research-id ma_cross_example_v1
+
+compare-example-inference:
+	python -m research.compare_inference --research-id ma_cross_example_v1
+
+generate-paper:
+	python -m research.paper_outputs.generate --experiment $(RUN_ID) --paper $(PAPER_ID) --research-id $(RESEARCH_ID)

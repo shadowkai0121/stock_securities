@@ -18,6 +18,8 @@ A research spec defines the study once:
 - `evaluation_definition`
 - `rerun_mode`
 - `report_definition`
+- optional `robustness`
+- optional `companion_docs`
 
 The spec is intentionally separate from any one execution.
 
@@ -44,6 +46,27 @@ with:
 Current supported rerun mode:
 
 - `fixed_spec`
+
+Optional companion design documents can live beside the JSON spec:
+
+- `research_specs/<research_id>.hypothesis.md`
+- `research_specs/<research_id>.design.md`
+
+Optional robustness grid example:
+
+```json
+{
+  "robustness": {
+    "transaction_costs": [0, 20, 40, 80],
+    "holding_periods": [1, 5, 20],
+    "winsorization_levels": [0, 0.01, 0.05]
+  }
+}
+```
+
+When `robustness` is present, `python -m research.run` will execute scenario sub-runs under:
+
+`experiments/<research_id>/runs/<run_id>/robustness/`
 
 The recommended pattern is:
 

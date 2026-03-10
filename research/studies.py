@@ -59,6 +59,104 @@ class MACrossoverStudyExecutor:
     def _write_frame(path: Path, frame: pd.DataFrame) -> None:
         frame.to_csv(path, index=False)
 
+    @staticmethod
+    def _apply_holding_period(signals: pd.DataFrame, holding_period_days: int) -> pd.DataFrame:
+        """Hold signals between rebalance dates to support holding-period robustness."""
+
+        period = max(int(holding_period_days), 1)
+        if period == 1 or signals.empty:
+            return signals
+
+        work = signals.copy()
+        work["date"] = pd.to_datetime(work["date"], errors="coerce")
+        work = work[work["date"].notna()].sort_values(["stock_id", "date"]).reset_index(drop=True)
+
+        output_parts: list[pd.DataFrame] = []
+        for _, group in work.groupby("stock_id", sort=True):
+            ordered = group.sort_values("date").reset_index(drop=True)
+            ordered["rebalance_signal"] = ordered["signal"].where((ordered.index % period) == 0)
+            ordered["signal"] = (
+                pd.to_numeric(ordered["rebalance_signal"], errors="coerce")
+                .ffill()
+                .fillna(pd.to_numeric(ordered["signal"], errors="coerce").fillna(0.0))
+            )
+            output_parts.append(ordered[["date", "stock_id", "signal"]])
+
+        out = pd.concat(output_parts, axis=0, ignore_index=True)
+        out["date"] = out["date"].dt.strftime("%Y-%m-%d")
+        out["signal"] = pd.to_numeric(out["signal"], errors="coerce").fillna(0.0).clip(lower=0.0, upper=1.0)
+        return out.sort_values(["date", "stock_id"]).reset_index(drop=True)
+
+    @staticmethod
+    def _winsorize_series(series: pd.Series, level: float) -> pd.Series:
+        if level <= 0.0:
+            return series
+        lower = float(series.quantile(level))
+        upper = float(series.quantile(1.0 - level))
+        return series.clip(lower=lower, upper=upper)
+
+    def _build_inference_panel(
+        self,
+        *,
+        prices: pd.DataFrame,
+        features: pd.DataFrame,
+        signals: pd.DataFrame,
+        universe: pd.DataFrame,
+        winsorization_level: float,
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Create stock-date panel for empirical inference modules."""
+
+        px = prices.copy()
+        px["date"] = pd.to_datetime(px["date"], errors="coerce")
+        px["close"] = pd.to_numeric(px["close"], errors="coerce")
+        px["trading_money"] = pd.to_numeric(px.get("trading_money"), errors="coerce")
+        px = px.dropna(subset=["date", "stock_id", "close"]).sort_values(["stock_id", "date"]).reset_index(drop=True)
+        if px.empty:
+            return pd.DataFrame(), pd.DataFrame(columns=["event_date", "stock_id", "event_type"])
+
+        px["ret"] = px.groupby("stock_id")["close"].pct_change()
+        px["ret_next"] = px.groupby("stock_id")["ret"].shift(-1)
+        px["market_cap_proxy"] = px["trading_money"].fillna(px["close"].abs())
+
+        merged = px[["date", "stock_id", "ret", "ret_next", "market_cap_proxy"]].copy()
+        if not features.empty:
+            feat = features.copy()
+            feat["date"] = pd.to_datetime(feat["date"], errors="coerce")
+            merged = merged.merge(feat, on=["date", "stock_id"], how="left", suffixes=("", "_feature"))
+
+        if not signals.empty:
+            sig = signals.copy()
+            sig["date"] = pd.to_datetime(sig["date"], errors="coerce")
+            sig["signal"] = pd.to_numeric(sig["signal"], errors="coerce")
+            merged = merged.merge(sig[["date", "stock_id", "signal"]], on=["date", "stock_id"], how="left")
+            merged["signal"] = pd.to_numeric(merged["signal"], errors="coerce").fillna(0.0)
+        else:
+            merged["signal"] = 0.0
+
+        if not universe.empty:
+            uni = universe.copy()
+            uni["date"] = pd.to_datetime(uni["date"], errors="coerce")
+            merged = merged.merge(uni[["date", "stock_id", "tradable_flag"]], on=["date", "stock_id"], how="left")
+            merged["tradable_flag"] = pd.to_numeric(merged["tradable_flag"], errors="coerce").fillna(0).astype(int)
+        else:
+            merged["tradable_flag"] = 1
+
+        merged = merged.dropna(subset=["ret_next"]).reset_index(drop=True)
+        if winsorization_level > 0:
+            merged["ret_next"] = self._winsorize_series(merged["ret_next"], winsorization_level)
+
+        merged = merged.sort_values(["date", "stock_id"]).reset_index(drop=True)
+
+        events = merged[["date", "stock_id", "signal"]].copy()
+        events["lag_signal"] = events.groupby("stock_id")["signal"].shift(1).fillna(0.0)
+        entries = events[(events["signal"] > 0) & (events["lag_signal"] <= 0)].copy()
+        event_candidates = entries.rename(columns={"date": "event_date"})[["event_date", "stock_id"]]
+        event_candidates["event_type"] = "signal_entry"
+
+        merged["date"] = pd.to_datetime(merged["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+        event_candidates["event_date"] = pd.to_datetime(event_candidates["event_date"], errors="coerce").dt.strftime("%Y-%m-%d")
+        return merged, event_candidates
+
     def execute(self, *, resolved_spec: dict[str, Any], run_dir: str | Path) -> StudyRunResult:
         """Execute the MA crossover study using only local persisted data."""
 
@@ -89,6 +187,8 @@ class MACrossoverStudyExecutor:
         backtest_cfg = dict(resolved_spec["backtest_definition"])
         evaluation_cfg = dict(resolved_spec["evaluation_definition"])
         report_cfg = dict(resolved_spec["report_definition"])
+        holding_period_days = int(strategy_cfg.get("holding_period_days", 1))
+        winsorization_level = float(evaluation_cfg.get("winsorization_level", 0.0) or 0.0)
 
         prices = data_loader.load_prices(
             stock_ids=active_stock_ids,
@@ -162,6 +262,7 @@ class MACrossoverStudyExecutor:
             features=features,
             universe=universe,
         )
+        signals = self._apply_holding_period(signals, holding_period_days)
         if signals.empty:
             raise StudyExecutionError("Signal model returned no signals for the requested date range.")
 
@@ -181,6 +282,8 @@ class MACrossoverStudyExecutor:
         timeseries = backtest.timeseries.copy()
         timeseries["date"] = pd.to_datetime(timeseries["date"], errors="coerce")
         returns = timeseries.set_index("date")["net_return"].dropna()
+        if winsorization_level > 0:
+            returns = self._winsorize_series(returns, winsorization_level)
 
         nw = newey_west_t_statistics(returns.values, max_lags=evaluation_cfg.get("newey_west_lags"))
         boot = bootstrap_confidence_interval(
@@ -270,6 +373,22 @@ class MACrossoverStudyExecutor:
         self._write_frame(timeseries_csv, backtest.timeseries)
         artifacts["backtest_timeseries"] = str(timeseries_csv)
 
+        inference_panel, event_candidates = self._build_inference_panel(
+            prices=prices,
+            features=features,
+            signals=signals,
+            universe=universe,
+            winsorization_level=winsorization_level,
+        )
+        if not inference_panel.empty:
+            inference_csv = root / "inference_panel.csv"
+            self._write_frame(inference_csv, inference_panel)
+            artifacts["inference_panel"] = str(inference_csv)
+        if not event_candidates.empty:
+            events_csv = root / "event_candidates.csv"
+            self._write_frame(events_csv, event_candidates)
+            artifacts["event_candidates"] = str(events_csv)
+
         if report_cfg.get("write_universe_csv", True):
             universe_csv = root / "universe_snapshot.csv"
             self._write_frame(universe_csv, universe)
@@ -285,6 +404,7 @@ class MACrossoverStudyExecutor:
             f"[study] research_id={resolved_spec['research_id']} run_id={resolved_spec['run_id']}",
             f"[study] data_as_of={data_as_of} start_date={start_date}",
             f"[study] universe_size={len(active_stock_ids)} price_rows={len(prices)} feature_rows={len(features)}",
+            f"[study] holding_period_days={holding_period_days} winsorization_level={winsorization_level}",
         ]
 
         return StudyRunResult(

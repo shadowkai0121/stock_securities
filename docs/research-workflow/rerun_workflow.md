@@ -20,6 +20,8 @@ Typical fields:
 - `evaluation_definition`
 - `rerun_mode`
 - `report_definition`
+- optional `robustness`
+- optional `companion_docs`
 
 Supported rerun mode today:
 
@@ -43,6 +45,7 @@ Files:
 - `artifacts.json`
 - `run.log`
 - `plots/`
+- optional `robustness/`
 
 Convenience files:
 
@@ -72,6 +75,8 @@ Research modules do not call remote APIs directly.
 4. Set `analysis_period.start_date` to the first in-sample date.
 5. Use `pipeline_id` to select the study executor.
 6. Keep the spec stable; reruns should change `data_as_of`, not the base spec.
+7. Add `research_specs/<research_id>.hypothesis.md` and `research_specs/<research_id>.design.md` to document identification assumptions.
+8. Add optional `robustness` grids for transaction costs, holding periods, and winsorization levels.
 
 ## How To Rerun An Existing Research On Newer Data
 
@@ -127,6 +132,19 @@ Current comparison output includes:
 - `universe_size`
 - dataset row-count and max-date changes from `data_manifest.json`
 
+Inference comparison:
+
+```bash
+python -m research.compare_inference --research-id ma_cross_example_v1
+```
+
+This adds:
+
+- coefficient stability
+- t-stat stability
+- significance persistence
+- long-short spread changes
+
 ## How To Schedule Periodic Reruns
 
 The runner is automation-friendly:
@@ -156,3 +174,19 @@ The runner enforces this by:
 - storing `data_as_of` in `resolved_spec.json`
 - recording `data_as_of` in `data_manifest.json`
 - writing run-level metrics and reports from the cutoff-bounded data only
+
+## Generate Paper Artifacts
+
+After a run completes:
+
+```bash
+python -m research.paper_outputs.generate --experiment <run_id> --paper <paper_id>
+```
+
+This builds:
+
+1. inference results (`inference_results.json`)
+2. paper-ready tables (`papers/<paper_id>/tables/`)
+3. paper-ready figures (`papers/<paper_id>/figures/`)
+4. appendix tables (`papers/<paper_id>/appendix/`)
+5. reproducibility records (`papers/<paper_id>/reproducibility/`)

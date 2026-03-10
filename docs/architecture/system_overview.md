@@ -17,8 +17,10 @@ This repository now acts as a reproducible quantitative research operating syste
 9. Experiment Tracking Layer: `experiments/registry.py`
 10. Research Spec Layer: `research/specs.py`, `research_specs/`
 11. Rerun Orchestration Layer: `research/run.py`, `research/compare_runs.py`
-12. Agent Operating Layer: `agents/`
-13. Reporting Layer: `research/report_generator.py`
+12. Inference Layer: `research/inference/`, `research/compare_inference.py`
+13. Paper Output Layer: `research/paper_outputs/`, `papers/`
+14. Agent Operating Layer: `agents/`
+15. Reporting Layer: `research/report_generator.py`
 
 ## Why `finmind-dl` Exists
 

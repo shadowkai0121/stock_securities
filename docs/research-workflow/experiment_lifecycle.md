@@ -19,12 +19,22 @@
 - run orchestrator pipeline end-to-end
 - capture metrics and validation outputs
 - generate report and plots
+- generate inference panel and event candidates
+- execute optional robustness scenario grid
 
 ## Finalize
 
 - write `metrics.json`
 - write `artifacts.json`
 - keep `report.md` as human-readable summary
+- store `inference_results.json` when inference is computed
+
+## Paper Outputs
+
+- run `python -m research.paper_outputs.generate --experiment <run_id> --paper <paper_id>`
+- export tables in CSV/Markdown/LaTeX
+- export figures for cumulative returns, coefficients, spreads, and rolling performance
+- write reproducibility payloads under `papers/<paper_id>/reproducibility/`
 
 ## Reproduce
 
